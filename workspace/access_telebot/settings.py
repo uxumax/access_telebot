@@ -10,7 +10,7 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
-from access_bot.settings_local import DATABASES, ALLOWED_HOSTS, DEBUG
+from access_telebot.settings_local import DATABASES, ALLOWED_HOSTS, DEBUG
 
 from pathlib import Path
 
@@ -25,8 +25,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-o!3(6%09sbs-zx(wa^sb9y=pynlhtpslp=v@dn)%%b@&-zpt02"
 
 
-
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -36,6 +34,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "main",
 ]
 
 MIDDLEWARE = [
