@@ -10,7 +10,13 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
-from access_telebot.settings_local import DATABASES, ALLOWED_HOSTS, DEBUG
+from access_telebot.settings_local import (
+    DATABASES, 
+    ALLOWED_HOSTS_REGEX, 
+    DEBUG,
+    TELEBOT_KEY,
+    SECRET_URL_WAY,
+)
 
 from pathlib import Path
 
@@ -24,7 +30,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "django-insecure-o!3(6%09sbs-zx(wa^sb9y=pynlhtpslp=v@dn)%%b@&-zpt02"
 
-
+ALLOWED_HOSTS = ["*"]  # replaced to settings_local.ALLOWED_HOSTS_REGEX
 # Application definition
 
 INSTALLED_APPS = [
@@ -39,6 +45,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "access_telebot.middleware.allowed_hosts_regex.AllowedHostsRegexMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
