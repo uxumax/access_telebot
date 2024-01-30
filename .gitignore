@@ -86,6 +86,7 @@ target/
 
 logs/
 __pycache__/
+migrations/
 settings_local.py
 media/
 

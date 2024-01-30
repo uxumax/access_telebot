@@ -7,14 +7,14 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def get_logger(mod_name, prefix=""):
     logger = logging.getLogger(mod_name)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
 
     if not logger.handlers:
         # create file handler which logs even debug messages
         fh = TimedRotatingFileHandler(
             os.path.join(BASE_DIR, f"logs/{mod_name}.log"), when="midnight"
         )
-        fh.setLevel(logging.INFO)
+        fh.setLevel(logging.DEBUG)
 
         # create formatter and add it to the handlers
         # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')

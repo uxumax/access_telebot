@@ -14,13 +14,24 @@ if [ $? != 0 ]; then
   # Окно для сервера Django для runserver и command
   tmux new-window -t $SESSION_NAME -n Django
   tmux split-window -v -t Django -p 50
+  
   # Настройка верхней панели (runserver)
   tmux send-keys -t Django.0 "cd /home/uxumax/dev/access_telebot/workspace" C-m
   tmux send-keys -t Django.0 "source ../env/bin/activate" C-m
   tmux send-keys -t Django.0 "python3.11 manage.py runserver 8001" C-m
+
   # Настройка нижней панели (command)
   tmux send-keys -t Django.1 "cd /home/uxumax/dev/access_telebot/workspace" C-m
   tmux send-keys -t Django.1 "source ../env/bin/activate" C-m
+
+  # Окно для работы с Git
+  tmux new-window -t $SESSION_NAME -n Git
+  tmux send-keys -t Git "cd /home/uxumax/dev/access_telebot/" C-m
+
+  # Окно для работы с PostgreSQL
+  tmux new-window -t $SESSION_NAME -n PostgreSQL
+  tmux send-keys -t PostgreSQL "sudo -u postgres psql" C-m
+  tmux send-keys -t PostgreSQL "gotosu10" C-m
 fi
 
 # Подключение к созданной сессии

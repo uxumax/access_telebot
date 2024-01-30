@@ -19,16 +19,15 @@ class TelegramWebhooker:
     
     @staticmethod
     def get_current_webhook_url() -> typing.Union['str', None]:
-        cfg = main.models.ProjectSettings.load()
-        url = cfg.telegram_webhook_url
-        return url
+        webhook = main.models.TelegramWebhook.load()
+        return webhook.url
 
     @staticmethod
     def _save_new_webhook(new_pid: int, new_url: str):
-        cfg = main.models.ProjectSettings.load()
-        cfg.telegram_webhook_url = new_url
-        cfg.telegram_webhook_pid = new_pid
-        cfg.save()
+        webhook = main.models.TelegramWebhook.load()
+        webhook.url = new_url
+        webhook.pid = new_pid
+        webhook.save()
 
     @staticmethod
     def is_webhook_working(webhook_url: str) -> bool:

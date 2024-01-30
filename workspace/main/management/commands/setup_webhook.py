@@ -1,14 +1,15 @@
 from django.core.management.base import BaseCommand
 import main.models
+import main.workers
 # from access_telebot.serveo_tunnel_maker import ServeoTunnelMaker
-import main.bot
+# import main.bot
 
 
 class Command(BaseCommand):
     help = "Setup webhook manually"
 
     def handle(self, *args, **options):
-        webhooker = main.bot.TelegramWebhooker
+        webhooker = main.workers.TelegramWebhooker
         
         url = webhooker.get_current_webhook_url()
         if url is not None:
@@ -22,8 +23,8 @@ class Command(BaseCommand):
             f"Webhook url {url} is not working. Make new one..."
         )
 
-        # new_url = webhooker.get_new_webhook_url()
+        new_url = webhooker.get_new_webhook_url()
 
-        # print(
-        #     f"Has been made new webhook {new_url}. Saving..."
-        # )
+        print(
+            f"Has been made new webhook {new_url} and saved."
+        )
