@@ -7,6 +7,7 @@ import telebot
 import main.models
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+import messenger.replier
 
 from access_telebot.settings import TELEBOT_KEY
 from access_telebot.logger import get_logger
@@ -39,6 +40,10 @@ def _save_or_update_user(user: telebot.types.User) -> None:
     return customer
 
 
+def _is_message_command(message: telebot.types.Message) -> bool:
+    return message.content_type == 'text' and message.text.startswith('/')
+
+
 class TooManyRequestsException(Exception):
     """Исключение, возникающее при слишком частых запросах пользователя."""
     pass
@@ -57,78 +62,26 @@ class CallbackAntiFlooder:
         current_time = timezone.now()
 
         last_callback_seconds = (
-            current_time - self.customer.date_last_callback_inline
+            current_time - self.customer.last_callback_inline_date
         ).total_seconds()
 
         self.log.debug(
             f"last_callback_seconds {last_callback_seconds} \n"
             f"current_time {current_time} \n"
-            f"self.customer.date_last_callback_inline \
-                {self.customer.date_last_callback_inline} \n"
+            f"self.customer.last_callback_inline_date \
+                {self.customer.last_callback_inline_date} \n"
         )
 
         # Проверяем, не слишком ли часто пользователь нажимает кнопку
-        if self.customer.date_last_callback_inline \
+        if self.customer.last_callback_inline_date \
                 and last_callback_seconds < 2: 
             raise TooManyRequestsException(
                 "Too many requests in a short period of time"
             )
 
-        # Обновляем время последнего нажатия
-        self.customer.date_last_callback_inline = current_time
-        self.customer.save()
-
-        # Обновляем время последнего нажатия
-        self.customer.update_last_callback()
-
-
-class CallbackInlineRouter:
-    def __init__(self, customer, call):
-        self.customer = customer
-        self.call = call
-
-    def _is(self, message_label: str):
-        return self.call.data == "message_menu_item_1"
-
-    def route(self):
-        if self._is("message_menu_item_1"):
-            # Ответ на callback query
-            bot.answer_callback_query(self.call.id)
-
-        if self._is("message_menu_item_2"):
-            # Ответ на callback query
-            bot.answer_callback_query(self.call.id)
-
-
-@bot.message_handler(commands=['start'])
-def handle_start(message: telebot.types.Message) -> None:
-    customer = _save_or_update_user(message.from_user)
-
-    # Создание инлайн-клавиатуры
-    markup = telebot.types.InlineKeyboardMarkup()
-    
-    # Добавление кнопки
-    button = telebot.types.InlineKeyboardButton(
-        "Menu Item 1", callback_data="message_menu_item_1",
-    )
-    markup.add(button)
-
-    # Добавление кнопки
-    button = telebot.types.InlineKeyboardButton(
-        "Menu Item 2", callback_data="message_menu_item_2",
-    )
-    markup.add(button)
-
-    # Отправка сообщения с кнопкой
-    bot.send_message(
-        message.chat.id, 
-        "Hi. Push the button", 
-        reply_markup=markup
-    )
-
 
 @bot.callback_query_handler(func=lambda call: True)
-def callback_inline(call: telebot.types.CallbackQuery) -> None:
+def callback_inline_handler(call: telebot.types.CallbackQuery) -> None:
     customer = _save_or_update_user(call.from_user)
 
     try:
@@ -139,14 +92,24 @@ def callback_inline(call: telebot.types.CallbackQuery) -> None:
         bot.answer_callback_query(call.id, text="Не нажимайте так часто!")
         return
 
-    CallbackInlineRouter(customer, call).route()
- 
+    customer.update_last_callback_inline_date()
+    messenger.replier.handle_callback_inline(customer, call)
+    
+
+@bot.message_handler(func=lambda message: _is_message_command(message))
+def command_handler(message: telebot.types.Message):
+    customer = _save_or_update_user(message.from_user)
+    messenger.replier.handle_command(customer, message)
+
 
 # General handler for all messages
 @bot.message_handler(func=lambda message: True)
 def handle_all_messages(message: telebot.types.Message) -> None:
-    _save_or_update_user(message.from_user)
-    bot.reply_to(message, "Your message: " + message.text)
+    customer = _save_or_update_user(message.from_user)
+    bot.reply_to(
+        message, 
+        f"Your message is {message.text} but I don't know what to do with this"
+    )
 
 
 class TelegramWebhookShield:
