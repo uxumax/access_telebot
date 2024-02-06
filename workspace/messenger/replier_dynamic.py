@@ -79,7 +79,7 @@ class CallbackInlineReply(ReplyBuilder):
             reply = messenger.models.CallbackInlineReply.objects.get(
                 callback_data=self.callback.data
             )
-        except main.models.CallbackInlineReply.DoesNotExist:  # Исправлена опечатка здесь
+        except messenger.models.CallbackInlineReply.DoesNotExist:  # Исправлена опечатка здесь
             bot.answer_callback_query(  # Используйте этот метод для отправки уведомления пользователю
                 self.callback.id, 
                 f"I don't know callback {self.callback.data}"

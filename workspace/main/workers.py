@@ -32,7 +32,7 @@ class TelegramWebhooker:
     @staticmethod
     def is_webhook_working(webhook_url: str) -> bool:
         """
-        Checks if the webhook is working by sending a GET request to the webhook URL.
+        Checks if the webhook is working by sending a GET request to the webhook URL with a 5-second timeout.
 
         Args:
             webhook_url (str): The URL of the webhook to be checked.
@@ -41,7 +41,8 @@ class TelegramWebhooker:
             bool: True if the webhook is working (status code 200 or 201), otherwise False.
         """
         try:
-            response = requests.get(webhook_url)
+            # Added timeout=5 to specify a 5-second timeout for the request
+            response = requests.get(webhook_url, timeout=5)
             if response.status_code in [200, 201]:
                 log.info(f"Webhook is still working {webhook_url}")
                 return True
@@ -68,6 +69,10 @@ class TelegramWebhooker:
     @classmethod
     def get_webhook_url(cls):
         url = cls.get_current_webhook_url()
+
+        cls.log.info(
+            "Checking webhook..."
+        )
 
         if url is not None:
             if cls.is_webhook_working(url):
@@ -105,7 +110,6 @@ class WebHookTunnelWorker:
 
     def start_loop(self):
         webhook_url = self.webhooker.get_webhook_url()
-        
         bot.delete_webhook()
         bot.set_webhook(url=webhook_url)        
 

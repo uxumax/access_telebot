@@ -80,26 +80,27 @@ class CallbackAntiFlooder:
             )
 
 
-@bot.callback_query_handler(func=lambda call: True)
-def callback_inline_handler(call: telebot.types.CallbackQuery) -> None:
-    customer = _save_or_update_user(call.from_user)
+@bot.callback_query_handler(func=lambda callback: True)
+def callback_inline_handler(callback: telebot.types.CallbackQuery) -> None:
+    customer = _save_or_update_user(callback.from_user)
 
     try:
         anti_flooder = CallbackAntiFlooder(customer)
         anti_flooder.filter()
     except TooManyRequestsException:
         # Ответ на callback query с уведомлением о слишком частых запросах
-        bot.answer_callback_query(call.id, text="Не нажимайте так часто!")
+        bot.answer_callback_query(callback.id, text="Не нажимайте так часто!")
         return
 
     customer.update_last_callback_inline_date()
-    messenger.replier.handle_callback_inline(customer, call)
+    print("WTF??")
+    messenger.replier.CallbackInlineRouter(customer, callback).route()
     
 
 @bot.message_handler(func=lambda message: _is_message_command(message))
 def command_handler(message: telebot.types.Message):
     customer = _save_or_update_user(message.from_user)
-    messenger.replier.handle_command(customer, message)
+    messenger.replier.CommandRouter(customer, message).route()
 
 
 # General handler for all messages
@@ -131,11 +132,36 @@ class TelegramWebhookView(View):
         update = telebot.types.Update.de_json(json_str)
         return update
 
+    @staticmethod
+    def _is_private_message(update) -> bool:
+        is_message = (
+            hasattr(update, 'message') and update.message
+        )
+        if is_message:
+            if update.message.chat.type == 'private':
+                return True
+        return False
+
+    @staticmethod
+    def _is_callback_query(update) -> bool:
+        return hasattr(update, 'callback_query') and update.callback_query
+
+    def _is_skip_update(self, update):
+        private_message: bool = self._is_private_message(update)
+        callback_query: bool = self._is_callback_query(update)
+        if not private_message and not callback_query:
+            return True
+        else:
+            return False
+
     def get(self, request):
         return HttpResponse("Webhook url test")
 
     def post(self, request):
         update = self._decode_update(request)
+
+        if self._is_skip_update(update):
+            return JsonResponse({'status': 200})
 
         shield = TelegramWebhookShield(update)
         if shield.is_message_from_another_bot():
@@ -143,7 +169,7 @@ class TelegramWebhookView(View):
                 update.message.chat.id,
                 "Sorry, I cannot speak with other bots"
             )
-            return
+            return JsonResponse({'status': 200})
 
         # bot.send_message(
         #     update.message.chat.id,
