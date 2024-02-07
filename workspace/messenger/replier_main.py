@@ -11,12 +11,12 @@ import messenger.models
 log = get_logger(__name__)
 bot = telebot.TeleBot(TELEBOT_KEY, threaded=False)
 
-StaticCommandReply = typing.Union[
+CommandReply = typing.Union[
     'CommandReplyStart',
 ]
 
 
-StaticCallbackInlineReply = typing.Union[
+CallbackInlineReply = typing.Union[
     'InlineReplyMySubs',
     'InlineReplyAllSubs',
 ]
@@ -131,7 +131,7 @@ class InlineReplyMySubs(BaseCallbackInlineReplyBuilder):
 
         for chat in unique_chats:
             text += f"{chat.title} до {access.end_date}\n"
-            
+
         return text  
 
 
@@ -172,7 +172,7 @@ class CommandReplyStart(BaseCommandReplyBuilder):
         return markup
 
 
-class StaticCommandRouter:
+class CommandRouter:
     def __init__(
         self, 
         customer: main.models.Customer, 
@@ -190,7 +190,7 @@ class StaticCommandRouter:
             return CommandReplyStart(*self.build_args).build()
 
 
-class StaticCallbackInlineRouter:
+class CallbackInlineRouter:
     def __init__(
         self, 
         customer: main.models.Customer, 
@@ -204,22 +204,22 @@ class StaticCallbackInlineRouter:
             return self.callback.data == data        
         
         if _is("my_subs"):
-            return self._build_static_reply(InlineReplyMySubs)
+            return self._build_reply(InlineReplyMySubs)
 
         if _is("all_subs"):
-            return self._build_static_reply(InlineReplyAllSubs)
+            return self._build_reply(InlineReplyAllSubs)
 
         bot.answer_callback_query(
             self.callback.id, 
             f"I don't know callback {self.callback.data}"
         )
 
-    def _build_static_reply(
+    def _build_reply(
         self, 
-        StaticReply: StaticCallbackInlineReply
+        InlineReply: CallbackInlineReply
     ):
         bot.answer_callback_query(self.callback.id)
-        return StaticReply(
+        return InlineReply(
             self.customer, self.callback
         ).build()
 

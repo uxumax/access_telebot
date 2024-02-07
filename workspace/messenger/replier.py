@@ -1,15 +1,14 @@
 import main.models
 import telebot.types
 
-from . import replier_dynamic
-from . import replier_static
+from . import replier_main
+from . import replier_custom
 
-
-STATIC_COMMANDS = [
+MAIN_COMMANDS = [
     "start",
 ]
 
-STATIC_CALLBACK_INLINES = [
+MAIN_CALLBACK_INLINES = [
     "my_subs",
     "all_subs",
 ]
@@ -26,22 +25,22 @@ class CommandRouter:
         self.command = self._parse_command()
 
     def route(self):
-        if self.command in STATIC_COMMANDS:
-            return self._route_to_static_reply()
+        if self.command in MAIN_COMMANDS:
+            return self._route_to_main_replier()
         else:
-            return self._route_to_dyncamic_reply()
+            return self._route_to_custom_replier()
 
     def _parse_command(self) -> str:
         command = self.message.text.split()[0][1:]  # Извлечение команды без '/'
         return command
 
-    def _route_to_static_reply(self):
-        return replier_static.StaticCommandRouter(
+    def _route_to_main_replier(self):
+        return replier_main.CommandRouter(
             self.customer, self.message, self.command
         ).route()
 
-    def _route_to_dyncamic_reply(self):
-        return replier_dynamic.CommandReply(
+    def _route_to_custom_replier(self):
+        return replier_custom.CommandReply(
             self.customer, self.message, self.command
         ).build()
 
@@ -56,17 +55,17 @@ class CallbackInlineRouter:
         self.callback = callback
 
     def route(self):
-        if self.callback.data in STATIC_CALLBACK_INLINES:
-            return self._route_to_static_reply()
+        if self.callback.data in MAIN_CALLBACK_INLINES:
+            return self._route_to_main_replier()
         else:
-            return self._route_to_dyncamic_reply()
+            return self._route_to_custom_replier()
 
-    def _route_to_static_reply(self):
-        return replier_static.StaticCallbackInlineRouter(
+    def _route_to_main_replier(self):
+        return replier_main.CallbackInlineRouter(
             self.customer, self.callback
         ).route()
 
-    def _route_to_dyncamic_reply(self):
-        return replier_dynamic.CallbackInlineReply(
+    def _route_to_custom_replier(self):
+        return replier_custom.CallbackInlineReply(
             self.customer, self.callback
         ).build()
