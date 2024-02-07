@@ -1,5 +1,6 @@
 from django.contrib import admin
 import main.models
+import accesser.admin
 
 
 @admin.register(main.models.TelegramWebhook)
@@ -38,6 +39,7 @@ class CustomerAdmin(admin.ModelAdmin):
             },
         ),
     )
+    inlines = [accesser.admin.CustomerChatAccessInline]
 
 
 # @admin.register(models.Subscription)

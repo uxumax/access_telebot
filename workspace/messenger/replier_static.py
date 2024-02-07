@@ -48,8 +48,8 @@ class InlineReplyAllSubs(BaseCallbackInlineReplyBuilder):
             "Our plans: "
         )
 
-        bot.reply_to(
-            self.callback.message,
+        bot.send_message(
+            self.customer.chat_id,
             text,
             reply_markup=self._build_markup()
         )  
@@ -60,7 +60,7 @@ class InlineReplyAllSubs(BaseCallbackInlineReplyBuilder):
         for sub in accesser.models.Subscription.objects.all():
             markup.add(
                 telebot.types.InlineKeyboardButton(
-                    sub.name, sub.slug
+                    sub.name, callback_data=sub.slug
                 )
             )
 
@@ -69,19 +69,19 @@ class InlineReplyAllSubs(BaseCallbackInlineReplyBuilder):
 
 class InlineReplyMySubs(BaseCallbackInlineReplyBuilder):
     def build(self):
-        self.access_records = accesser.models.AccessRecord.objects.filter(
+        self.customer_chat_accesses = accesser.models.CustomerChatAccess.objects.filter(
             customer=self.customer
         ).all()
         
-        if self.access_records:
+        if self.customer_chat_accesses:
             text = self._get_text()
         else:
             text = (
-                "You don't have active plan right now"
+                "Sorry, you don't have active plan right now"
             )
 
-        bot.reply_to(
-            self.callback.message,
+        bot.send_message(
+            self.customer.chat_id,
             text,
             reply_markup=self._build_markup()
         )  
@@ -96,51 +96,49 @@ class InlineReplyMySubs(BaseCallbackInlineReplyBuilder):
 
     def _get_text(self):
         text = (
-            "Your plans: \n"
+            "You have these subscriptions: \n"
+            f"{self._get_subscription_list_text()}"
+            "\n"
         )
+        text += (
+            "You have access to chat/channels: \n"
+            f"{self._get_customer_access_chat_list_text()}"
+            "\n"            
+        )
+        return text
 
-        text += "You have access to chat/channels: \n"
-        for access in self.access_records:
-            line = f"- {access.chat.name} until {access.expiration_date}"
-            text += line
-
-    def _get_subs_list_text(self):
-        text_list = ""
+    def _get_subscription_list_text(self):
+        text = ""
         for subs in self._get_subscription_list():
-            line = (
-                f"You have subscription {subs.name}. "
-                "This means you have access to these channels/groups:\n"
-            )
-            line += self._get_customer_access_chat_list_text(subs)
-            text_list += line
-
-        text_list += "\n\n"
-        return text_list
+            text += f"{subs.name}\n"
+        return text
 
     def _get_subscription_list(self):
         subs_list = []
-        for access in self.access_records:
+        for access in self.customer_chat_accesses:
             if access.subscription not in subs_list:
                 subs_list.append(access.subscription)
         return subs_list
 
-    def _get_customer_access_chat_list_text(self, subs: accesser.models.CustomerChatAccess):
+    def _get_customer_access_chat_list_text(self):
         text = ""
-        for access in self._get_customer_access_chat_list(subs):
-            text += f"{access.chat.name} до {access.end_date}\n"
-        return text
+        unique_chats = []
+        for access in self.customer_chat_accesses:
+            for chat in access.chat_group.get_all_child_chats():
+                # Clear all dublicates from two different sub with same chats
+                if chat not in unique_chats:
+                    unique_chats.append(chat)
 
-    def _get_customer_access_chat_list(self, subs: accesser.models.CustomerChatAccess):
-        return [
-            access for access in self.access_records
-            if access.subscription == subs
-        ]        
+        for chat in unique_chats:
+            text += f"{chat.title} до {access.end_date}\n"
+            
+        return text  
 
 
 class CommandReplyStart(BaseCommandReplyBuilder):
     def build(self):
         text = (
-            "Our plans: "
+            "Hi. I am your accessbot"
         )
 
         bot.reply_to(
@@ -161,7 +159,7 @@ class CommandReplyStart(BaseCommandReplyBuilder):
 
         markup.add(
             button(
-                "My plan", callback_data="my_plan"
+                "My plan", callback_data="my_subs"
             )
         )
 

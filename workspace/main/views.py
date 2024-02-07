@@ -93,7 +93,6 @@ def callback_inline_handler(callback: telebot.types.CallbackQuery) -> None:
         return
 
     customer.update_last_callback_inline_date()
-    print("WTF??")
     messenger.replier.CallbackInlineRouter(customer, callback).route()
     
 

@@ -1,7 +1,7 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
-
+from django.db.models import QuerySet
 import main.models
 
 
@@ -9,6 +9,34 @@ class ChatTypeChoices(models.TextChoices):
     SUPERGROUP = 'supergroup', 'Supergroup'
     GIGAGROUP = 'gigagroup', 'Gigagroup'
 
+
+class ChatGroup(models.Model):
+    name = models.CharField(max_length=255)
+    chats = models.ManyToManyField(
+        'Chat', 
+        related_name='chat_groups',
+        blank=True
+    )
+    parent_group = models.ForeignKey(
+        'self', 
+        on_delete=models.CASCADE, 
+        related_name='child_groups',
+        null=True, 
+        blank=True
+    )
+
+    def __str__(self):
+        return self.name
+
+    def get_all_child_chats(self) -> QuerySet:
+        """
+        Получает все чаты из текущей группы и ее дочерних групп рекурсивно.
+        """
+        chats = self.chats.all()
+        for child_group in self.child_groups.all():
+            chats = chats | child_group.get_all_child_chats()
+        return chats.distinct()
+        
 
 class Chat(models.Model):
     chat_id = models.BigIntegerField(primary_key=True)
@@ -43,6 +71,10 @@ class Subscription(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     duration = models.DurationField()
 
+    def __str__(self):
+        return f"({self.name})"
+
+
 
 class SubscriptionChatAccess(models.Model):
     subscription = models.ForeignKey(
@@ -50,15 +82,19 @@ class SubscriptionChatAccess(models.Model):
         on_delete=models.CASCADE,
         related_name="access_to_chats"
     )
-    chat = models.ForeignKey(
-        Chat,
+    chat_group = models.ForeignKey(
+        ChatGroup,
         on_delete=models.CASCADE,
-        related_name="subscription_accesses"
+        # related_name="subscription_accesses"
     )
 
 
 class CustomerChatAccess(models.Model):
     customer = models.ForeignKey(main.models.Customer, on_delete=models.CASCADE)
+    chat_group = models.ForeignKey(
+        ChatGroup,
+        on_delete=models.CASCADE,
+    )
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
     subscription = models.ForeignKey(
