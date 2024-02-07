@@ -5,6 +5,7 @@ from django.db.models import QuerySet
 import main.models
 
 
+
 class ChatTypeChoices(models.TextChoices):
     SUPERGROUP = 'supergroup', 'Supergroup'
     GIGAGROUP = 'gigagroup', 'Gigagroup'
@@ -52,6 +53,9 @@ class Chat(models.Model):
         null=True
     )
 
+    def __str__(self):
+        return f"{self.title} ({self.get_chat_type_display()})"
+
     def clean(self):
         super().clean()
         if self.invite_link:
@@ -60,9 +64,6 @@ class Chat(models.Model):
                 validator(self.invite_link)
             except ValidationError as e:
                 raise ValidationError({'invite_link': "Invalid URL."}) from e
-
-    def __str__(self):
-        return f"{self.title} ({self.get_chat_type_display()})"
 
 
 class Subscription(models.Model):

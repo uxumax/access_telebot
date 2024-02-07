@@ -1,9 +1,8 @@
-# your_app/management/commands/get_chat_info.py
-
 from django.core.management.base import BaseCommand, CommandError
 from telebot import TeleBot
 from telebot.types import Chat
 from django.conf import settings
+
 
 class Command(BaseCommand):
     help = 'Retrieves all available information about a specified chat'
@@ -14,12 +13,8 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         chat_id = options['chat_id']
         bot = self.initialize_bot()
-        
-        try:
-            chat_info = self.get_all_chat_info(bot, chat_id)
-            self.print_chat_info(chat_info)
-        except Exception as e:
-            raise CommandError(f"An error occurred: {e}")
+        chat_info = self.get_all_chat_info(bot, chat_id)
+        self.print_chat_info(chat_info)
 
     def initialize_bot(self) -> TeleBot:
         """Initialize the Telegram bot."""
