@@ -36,7 +36,7 @@ class ChatGroup(models.Model):
         for child_group in self.child_groups.all():
             chats = chats | child_group.get_all_child_chats()
         return chats.distinct()
-        
+
 
 class Chat(models.Model):
     chat_id = models.BigIntegerField(primary_key=True)
@@ -73,7 +73,6 @@ class Subscription(models.Model):
 
     def __str__(self):
         return f"({self.name})"
-
 
 
 class SubscriptionChatAccess(models.Model):
@@ -118,26 +117,6 @@ def create_access_records(customer_id: int, subscription_id: int):
             subscription=subscription
         )
 
-
-class Transaction(models.Model):
-    customer = models.ForeignKey(main.models.Customer, on_delete=models.CASCADE)
-    subscription = models.ForeignKey(Subscription, on_delete=models.SET_NULL, null=True)
-    transaction_id = models.CharField(max_length=100)
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    status = models.CharField(max_length=50)  # Например: 'success', 'pending', 'failed'
-    timestamp = models.DateTimeField(auto_now_add=True)
-
-
-class PaymentDetails(models.Model):
-    customer = models.ForeignKey(main.models.Customer, on_delete=models.CASCADE)
-    payment_method_type = models.CharField(
-        max_length=50
-    )  # Например: 'credit_card', 'paypal'
-    last_four = models.CharField(max_length=4)
-    expiration_date = models.DateField()
-    token = models.CharField(
-        max_length=100
-    )  # Токен платежного метода, предоставляемый платежной системой
 
 
 
