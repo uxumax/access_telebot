@@ -20,20 +20,27 @@ class CustomerAccessRevokeWorker:
 
     def _beat(self):
         for access in self._get_all_expired_accesses():
-            return self._revoke_access(access)
+            self._revoke_access(access)
+            self.log.info(
+                f"Access {access} has been revoked in Telegram API"
+            )
+            self._set_inactive(access)
 
     @staticmethod
     def _get_all_expired_accesses():
         return models.CustomerChatAccess.objects.filter(
-            end_date__lt=timezone.now()  # Истекшие доступы, где 'end_date' меньше текущего времени
+            active=True,
+            end_date__lt=timezone.now()
         ).all()
 
-    @classmethod
-    def _revoke_access(cls, access):
+    @staticmethod
+    def _revoke_access(access):
         for chat in access.chat_group.chats.all():
             bot.kick_chat_member(
                 chat.chat_id, access.customer.chat_id
             )
-        cls.log.info(
-            f"Access {access} has been revoked"
-        )
+
+    @staticmethod
+    def _set_inactive(access):
+        access.active = False
+        access.save()

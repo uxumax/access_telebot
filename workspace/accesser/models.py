@@ -103,6 +103,7 @@ class CustomerChatAccess(models.Model):
         null=True, 
         blank=True
     )
+    active = models.BooleanField(default=True)
 
     def __str__(self):
         return f"({self.customer.chat_id}:{self.chat_group.id}:{self.end_date})"
