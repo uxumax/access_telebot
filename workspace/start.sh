@@ -14,7 +14,7 @@ echo '' > celery.pid &>/dev/null
 
 # Запускаем Celery-воркер и записываем его идентификатор процесса в файл
 # &>/dev/null
-celery -A access_telebot worker --loglevel=error --logfile=logs/celery_worker.log --concurrency=1 &
+celery -A access_telebot worker --loglevel=error --logfile=logs/celery_worker.log --concurrency=2 &
 echo $! >> celery.pid
 
 sleep 3 
@@ -30,5 +30,6 @@ start_celery_task() {
 
 # Запуск задач Celery
 start_celery_task main.celery.start_webhook_worker
+start_celery_task accesser.celery.start_customer_access_revoke_worker
 
 sleep 3

@@ -104,6 +104,9 @@ class CustomerChatAccess(models.Model):
         blank=True
     )
 
+    def __str__(self):
+        return f"({self.customer.chat_id}:{self.chat_group.id}:{self.end_date})"
+
 
 def create_access_records(customer_id: int, subscription_id: int):
     from django.utils import timezone
