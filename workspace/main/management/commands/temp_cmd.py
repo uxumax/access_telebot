@@ -1,18 +1,11 @@
 from django.core.management.base import BaseCommand
-from access_telebot.settings import TELEBOT_KEY
-import telebot
-
-bot = telebot.TeleBot(TELEBOT_KEY, threaded=False)
-
-
-def get_channel_name(chat_id: int | str) -> str:
-    chat: telebot.types.Chat = bot.get_chat(chat_id)
-    return chat.title  # This is the title of the channel
-
+from cryptography.fernet import Fernet
 
 class Command(BaseCommand):
-    help = "Some fast temp cmd"
+    help = 'Generates a secure encryption key for FIELD_ENCRYPTION_KEY setting'
 
-    def handle(self, *args, **options):
-        name = get_channel_name(-1002040160842)
-        print(name)
+    def handle(self, *args, **kwargs):
+        key = Fernet.generate_key()
+        safe_key = key.decode('utf-8')  # Конвертируем байты в строку для удобства копирования
+        self.stdout.write(self.style.SUCCESS(f'Secure encryption key: {safe_key}'))
+        self.stdout.write(self.style.SUCCESS('Copy the above key into your settings.py as the value of FIELD_ENCRYPTION_KEY.'))

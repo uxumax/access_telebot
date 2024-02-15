@@ -5,7 +5,6 @@ from django.db.models import QuerySet
 import main.models
 
 
-
 class ChatTypeChoices(models.TextChoices):
     SUPERGROUP = 'supergroup', 'Supergroup'
     GIGAGROUP = 'gigagroup', 'Gigagroup'
@@ -54,7 +53,7 @@ class Chat(models.Model):
     )
 
     def __str__(self):
-        return f"{self.title} ({self.get_chat_type_display()})"
+        return f"{self.title} ({self.chat_type})"
 
     def clean(self):
         super().clean()
@@ -121,7 +120,4 @@ def create_access_records(customer_id: int, subscription_id: int):
             end_date=timezone.now() + subscription.duration,
             subscription=subscription
         )
-
-
-
 

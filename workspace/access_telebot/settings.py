@@ -16,6 +16,7 @@ from access_telebot.settings_local import (
     DEBUG,
     TELEBOT_KEY,
     SECRET_URL_WAY,
+    FIELD_ENCRYPTION_KEY,
 )
 
 from pathlib import Path
