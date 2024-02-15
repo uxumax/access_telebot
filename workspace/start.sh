@@ -30,6 +30,6 @@ start_celery_task() {
 
 # Запуск задач Celery
 start_celery_task main.celery.start_webhook_worker
-start_celery_task accesser.celery.start_customer_access_revoke_worker
+# start_celery_task accesser.celery.start_customer_access_revoke_worker
 
 sleep 3

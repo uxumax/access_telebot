@@ -2,7 +2,7 @@ from . import replies
 import telebot
 from access_telebot.settings import TELEBOT_KEY
 from access_telebot.logger import get_logger
-from messenger.types import CallbackInlineRouterBase
+from messenger.routers import CallbackInlineRouterBase
 
 
 bot = telebot.TeleBot(TELEBOT_KEY, threaded=False)

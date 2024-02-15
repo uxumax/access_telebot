@@ -14,6 +14,26 @@ log = get_logger(__name__)
 bot = telebot.TeleBot(TELEBOT_KEY, threaded=False)
 
 
+class CallbackInlineReplyBuilderBase:
+    def __init__(
+        self, 
+        customer: main.models.Customer, 
+        callback: telebot.types.CallbackQuery
+    ):
+        self.customer = customer
+        self.callback = callback
+
+
+class CommandReplyBuilderBase:
+    def __init__(
+        self, 
+        customer: main.models.Customer, 
+        message: telebot.types.Message,
+    ):
+        self.customer = customer
+        self.message = message
+
+
 class CustomReplyBuilder:
     log = get_logger(__name__)
 

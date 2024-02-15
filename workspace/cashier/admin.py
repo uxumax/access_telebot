@@ -13,16 +13,16 @@ class CryptoInvoiceAdmin(admin.ModelAdmin):
         "address",
         "amount",
         "currency",
-        "create_date",
+        "start_building_date",
         "paid_date",
     )
-    list_filter = ("status", "network", "currency", "create_date")
+    list_filter = ("status", "network", "currency", "start_building_date")
     search_fields = (
         "address",
         "customer__name",
         "subscription__id",
     )  # Adjust these fields based on your Customer and Subscription models
-    date_hierarchy = "create_date"
+    date_hierarchy = "start_building_date"
     actions = ["mark_as_paid"]
 
     @admin.action(description="Mark selected invoices as paid")

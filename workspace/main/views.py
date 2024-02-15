@@ -7,7 +7,8 @@ import telebot
 import main.models
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-import messenger.replier
+import messenger.replies
+import messenger.routers
 
 from access_telebot.settings import TELEBOT_KEY
 from access_telebot.logger import get_logger
@@ -93,13 +94,13 @@ def callback_inline_handler(callback: telebot.types.CallbackQuery) -> None:
         return
 
     customer.update_last_callback_inline_date()
-    messenger.replier.CallbackInlineRouter(customer, callback).route()
+    messenger.routers.CallbackInlineRouter(customer, callback).route()
     
 
 @bot.message_handler(func=lambda message: _is_message_command(message))
 def command_handler(message: telebot.types.Message):
     customer = _save_or_update_user(message.from_user)
-    messenger.replier.CommandRouter(customer, message).route()
+    messenger.routers.CommandRouter(customer, message).route()
 
 
 # General handler for all messages

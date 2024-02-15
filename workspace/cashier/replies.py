@@ -9,7 +9,7 @@ import accesser.models
 import cashier.models
 from . import models
 
-from wallets.crypto import tron as tron_wallet
+from .wallets.crypto import tron as tron_wallet
 
 bot = telebot.TeleBot(TELEBOT_KEY, threaded=False)
 log = get_logger(__name__)
@@ -42,8 +42,10 @@ class InlineReplyBuildCryptoInvoice(CallbackInlineReplyBuilderBase):
 
     def _continue_building_invoice(self):
         inv = self.building_invoice
+
         if inv.network is None and inv.currency is None:
             'choose network reply'
+            
         if inv.address is None:
             'invoice almost ready. Only get address remain'
             'after got address timeout start and customer have to pay'

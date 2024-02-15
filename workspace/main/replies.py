@@ -31,13 +31,13 @@ class CommandReplyStart(CommandReplyBuilderBase):
 
         markup.add(
             button(
-                "Plans", callback_data="cashier:all_subs"
+                "Plans", callback_data="accesser:all_subs"
             )
         )
 
         markup.add(
             button(
-                "My plan", callback_data="cashier:my_subs"
+                "My plan", callback_data="accesser:my_subs"
             )
         )
 

@@ -2,7 +2,7 @@ from django.db import models
 from django.utils import timezone
 from datetime import datetime, timedelta
 import typing
-import cashier.typing
+import cashier.types
 import main.models
 import accesser.models
 from encrypted_model_fields.fields import EncryptedCharField, EncryptedTextField

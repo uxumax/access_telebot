@@ -4,9 +4,9 @@ from access_telebot.logger import get_logger
 import telebot
 import main.models
 import accesser.models
+from messenger.replies import CallbackInlineReplyBuilderBase
 from . import models
 
-from wallets.crypto import tron as tron_wallet
 
 bot = telebot.TeleBot(TELEBOT_KEY, threaded=False)
 log = get_logger(__name__)
@@ -18,7 +18,7 @@ CallbackInlineReply = typing.Union[
 ]
 
 
-class InlineReplyAllSubs(main.models.BaseCallbackInlineReplyBuilder):
+class InlineReplyAllSubs(CallbackInlineReplyBuilderBase):
     def build(self):
         text = (
             "Our plans: "
@@ -43,7 +43,7 @@ class InlineReplyAllSubs(main.models.BaseCallbackInlineReplyBuilder):
         return markup
 
 
-class InlineReplyMySubs(main.models.BaseCallbackInlineReplyBuilder):
+class InlineReplyMySubs(CallbackInlineReplyBuilderBase):
     def build(self):
         self.customer_chat_accesses = accesser.models.CustomerChatAccess.objects.filter(
             customer=self.customer
@@ -109,9 +109,6 @@ class InlineReplyMySubs(main.models.BaseCallbackInlineReplyBuilder):
             text += f"{chat.title} до {access.end_date}\n"
 
         return text  
-
-
-
 
 
 # class TronInvoiceBuildRouter:
