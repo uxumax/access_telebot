@@ -1,7 +1,7 @@
 import telebot
 import typing
 
-import messenger.replies.BaseCommandReplyBuilder
+from messenger.replies import CommandReplyBuilderBase
 from access_telebot.settings import TELEBOT_KEY
 
 
@@ -13,7 +13,7 @@ CommandReply = typing.Union[
 ]
 
 
-class CommandReplyStart(messenger.replies.BaseCommandReplyBuilder):
+class CommandReplyStart(CommandReplyBuilderBase):
     def build(self):
         text = (
             "Hi. I am your accessbot"

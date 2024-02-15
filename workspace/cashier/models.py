@@ -14,7 +14,13 @@ class TransactionStatusChoices(models.TextChoices):
     FAIL = "FAIL", "FAIL"
     CANCELED = "CANCELED", "CANCELED"
 
-class Invoice
+
+class InvoiceStatusChoice(models.TextChoices):
+    BUILDING = "BUILDING", "BUILDING"
+    PAYING = "PAYING", "PAYING"
+    PAID = "PAID", "PAID"
+    CANCELED = "CANCELED", "CANCELED"
+
 
 class CryptoCurrencyChoices(models.TextChoices):
     USDT = "USDT", "USDT"
@@ -61,8 +67,8 @@ class CryptoInvoice(models.Model):
     )
     status = models.CharField(
         max_length=20,
-        choices=TransactionStatusChoices.choices,
-        default=TransactionStatusChoices.BUILDING        
+        choices=InvoiceStatusChoice.choices,
+        default=InvoiceStatusChoice.BUILDING        
     )
     network = models.CharField(
         max_length=100,

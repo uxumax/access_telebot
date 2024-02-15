@@ -14,26 +14,6 @@ log = get_logger(__name__)
 bot = telebot.TeleBot(TELEBOT_KEY, threaded=False)
 
 
-class BaseCommandReplyBuilder:
-    def __init__(
-        self, 
-        customer: main.models.Customer, 
-        message: telebot.types.Message,
-    ):
-        self.customer = customer
-        self.message = message
-
-
-class BaseCallbackInlineReplyBuilder:
-    def __init__(
-        self, 
-        customer: main.models.Customer, 
-        callback: telebot.types.CallbackQuery
-    ):
-        self.customer = customer
-        self.callback = callback
-
-
 class CustomReplyBuilder:
     log = get_logger(__name__)
 
@@ -119,38 +99,4 @@ class CustomCallbackInlineReply(CustomReplyBuilder):
             reply.text,
             reply_markup=self.build_markup(reply)
         )
-
-
-# class CallbackInlineReply(BaseCallbackInlineReplyBuilder):
-#     def __init__(
-#         self, 
-#         customer: main.models.Customer, 
-#         callback: telebot.types.CallbackQuery
-#     ):
-#         self.customer = customer
-#         self.callback = callback
-
-#     def build(self):
-#         try:
-#             reply = messenger.models.CallbackInlineReply.objects.get(
-#                 callback_data=self.callback.data
-#             )
-#         except main.models.CallbackInlineReply.DoesNotExist:  # Исправлена опечатка здесь
-#             bot.answer_callback_query(  # Используйте этот метод для отправки уведомления пользователю
-#                 self.callback.id, 
-#                 f"I don't know callback {self.callback.data}"
-#             )
-#             return
-
-#         # Используйте этот метод, чтобы сказать телеге, что сигнал от кнопки получен
-#         bot.answer_callback_query(self.callback.id)
-        
-#         # Используйте send_message для ответа в чат, а не reply_to
-#         bot.send_message(
-#             self.callback.message.chat.id,  # Получаем ID чата из callback.message
-#             reply.text,
-#             reply_markup=self.build_markup(reply)
-#         )
-
-
 
