@@ -7,10 +7,10 @@ from access_telebot.logger import get_logger
 import cashier.models
 import cashier.typing
 
-TRON_API_URL = "https://api.trongrid.io"
+from django.conf import settings
+
+
 TRON_ADDRESS = "TFAEqAkD7AhFPazqmrUvVqyg39awDi9tNY"
-TRON_USDT_CONTRACT = "41a614f803b6fd780986a42c78ec9c7f77e6ded13c"
-TRON_CONFIRMATION_COUNT = 19
 
 
 class TronTransactionDataDecoder:
@@ -68,7 +68,7 @@ class TronTransactionsGetter:
     
     @staticmethod
     def _get_current_block_number() -> int:
-        endpoint = f'{TRON_API_URL}/v1/blocks/latest/events'
+        endpoint = f'{settings.TRON_API_URL}/v1/blocks/latest/events'
         response = requests.get(endpoint)
         if response.status_code == 200:
             current_block = response.json()
@@ -78,7 +78,7 @@ class TronTransactionsGetter:
 
     @staticmethod
     def _get_transactions():
-        endpoint = f'{TRON_API_URL}/v1/accounts/{TRON_ADDRESS}/transactions'
+        endpoint = f'{settings.TRON_API_URL}/v1/accounts/{TRON_ADDRESS}/transactions'
         response = requests.get(endpoint)
         if response.status_code != 200:
             raise Exception(
@@ -93,7 +93,7 @@ class TronTransactionsGetter:
         data = transaction["raw_data"]["contract"][0]["parameter"]["value"]
         if "contract_address" not in data:
             return False
-        if TRON_USDT_CONTRACT != data["contract_address"]:
+        if settings.TRON_USDT_CONTRACT != data["contract_address"]:
             return False
         return True
 
@@ -134,7 +134,8 @@ class InvoiceTransactionChecker:
             invoice=self.invoice,
             txid=self.invoice_tx["txid"],
             defaults={
-                "confirmations": self.invoice_tx["confirmations"],
+                "current_confirmations": self.invoice_tx["confirmations"],
+                "required_confirmations": settings.TRON_CONFIRMATION_COUNT
             }
         )
 
@@ -146,7 +147,8 @@ class InvoiceTransactionChecker:
 
     def not_enough_confirmations(self) -> bool:
         self._update_transaction_model()
-        return self.invoice_tx["confirmations"] < TRON_CONFIRMATION_COUNT
+        return self.\
+            invoice_tx["confirmations"] < settings.TRON_CONFIRMATION_COUNT
 
 
 class TronTransactionCheckWorker:

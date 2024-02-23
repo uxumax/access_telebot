@@ -15,11 +15,12 @@ class TransactionStatusChoices(models.TextChoices):
     CANCELED = "CANCELED", "CANCELED"
 
 
-class InvoiceStatusChoice(models.TextChoices):
-    BUILDING = "BUILDING", "BUILDING"
+class CryptoInvoiceStatusChoice(models.TextChoices):
     PAYING = "PAYING", "PAYING"
     PAID = "PAID", "PAID"
+    CONFIRMED = "CONFIRMED", "CONFIRMED"
     CANCELED = "CANCELED", "CANCELED"
+    EXPIRED = "EXPIRED", "EXPIRED"
 
 
 class CryptoCurrencyChoices(models.TextChoices):
@@ -37,6 +38,124 @@ class TronAddressStatusChoices(models.TextChoices):
     BUSY = "BUSY", "BUSY"
 
 
+class CurrencyTypeChoices(models.TextChoices):
+    FIAT = "FIAT", "FIAT"
+    CRYPTO = "CRYPTO", "CRYPTO"
+
+
+class TempModelAbstract(models.Model):
+    create_date = models.DateTimeField(auto_now_add=True)
+    update_date = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+
+class BuildingInvoice(TempModelAbstract):
+    BUILDING_TIMEOUT = timedelta(minutes=30)
+
+    customer = models.OneToOneField(
+        main.models.Customer, 
+        on_delete=models.CASCADE,
+        related_name="building_invoice"
+    )
+    subscription = models.ForeignKey(
+        accesser.models.Subscription, 
+        on_delete=models.CASCADE, 
+        null=True
+    )
+    duration = models.ForeignKey(
+        accesser.models.SubscriptionDurationPrice,
+        on_delete=models.CASCADE, 
+        null=True
+    )
+    amount = models.DecimalField(
+        max_digits=19, 
+        decimal_places=6,
+        null=True
+    )
+    network = models.CharField(
+        max_length=100,
+        choices=CryptoNetworkChoices.choices,
+        null=True
+    )
+    currency = models.CharField(
+        max_length=10,
+        choices=CryptoCurrencyChoices.choices,
+        null=True
+    )
+    currency_type = models.CharField(
+        max_length=6,
+        choices=CurrencyTypeChoices.choices,
+        null=True
+    )
+
+
+class CryptoInvoice(models.Model):
+    PAYING_TIMEOUT = timedelta(minutes=60)
+    
+    customer = models.ForeignKey(
+        main.models.Customer, 
+        on_delete=models.CASCADE,
+        related_name="crypto_invoices"
+    )
+    subscription = models.ForeignKey(
+        accesser.models.Subscription, 
+        on_delete=models.SET_NULL,
+        null=True
+    )
+    address = models.CharField(
+        max_length=128,        
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=CryptoInvoiceStatusChoice.choices,
+        default=CryptoInvoiceStatusChoice.PAYING
+    )
+    network = models.CharField(
+        max_length=100,
+        choices=CryptoNetworkChoices.choices,
+    )
+    amount = models.DecimalField(
+        max_digits=19, 
+        decimal_places=6
+    )
+    currency = models.CharField(
+        max_length=10,
+        choices=CryptoCurrencyChoices.choices,
+    )
+    expire_date = models.DateTimeField()
+
+    create_date = models.DateTimeField(auto_now_add=True)
+    paid_date = models.DateTimeField(null=True, blank=True)
+    confirmed_date = models.DateTimeField(null=True, blank=True)
+    notes = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return f"cInvoice({self.id}:{self.customer.id}:{self.status})"
+
+    def confirmed(self):
+        from . import signals
+        signals.CryptoInvoiceConfirmed(self)
+        self.save()
+
+    def canceled(self):
+        from . import signals
+        signals.CryptoInvoiceCanceled(self)
+        self.save()
+
+    def expired(self):
+        from . import signals
+        signals.CryptoInvoiceExpired(self)
+        self.save()
+
+    def save(self, *args, **kwargs):
+        from . import signals
+        if self.pk is None:  # is creating
+            signals.CryptoInvoicePreCreate(self)
+        super().save(*args, **kwargs)
+
+
 class TronAddress(models.Model):
     status = models.CharField(
         max_length=10,
@@ -45,56 +164,10 @@ class TronAddress(models.Model):
     )
     address = models.CharField(max_length=34)
     private_key = EncryptedCharField(max_length=64)
-    created_at_date = models.DateTimeField(auto_now_add=True)
+    create_date = models.DateTimeField(auto_now_add=True)
 
-
-class CryptoInvoice(models.Model):
-    PAY_TIMEOUT = timedelta(minutes=60)
-
-    customer = models.ForeignKey(
-        main.models.Customer, 
-        on_delete=models.CASCADE
-    )
-    subscription = models.ForeignKey(
-        accesser.models.Subscription, 
-        on_delete=models.SET_NULL, 
-        null=True
-    )
-    address = models.ForeignKey(
-        TronAddress,
-        on_delete=models.PROTECT, 
-        null=True
-    )
-    status = models.CharField(
-        max_length=20,
-        choices=InvoiceStatusChoice.choices,
-        default=InvoiceStatusChoice.BUILDING        
-    )
-    network = models.CharField(
-        max_length=100,
-        choices=CryptoNetworkChoices.choices,
-        null=True
-    )
-
-    amount = models.DecimalField(
-        max_digits=19, 
-        decimal_places=6
-    )
-    currency = models.CharField(
-        max_length=10,
-        choices=CryptoCurrencyChoices.choices,
-        null=True
-    )
-    start_building_date = models.DateTimeField(auto_now_add=True)
-
-    expire_date = models.DateTimeField(null=True)
-    paid_date = models.DateTimeField(null=True, blank=True)
-    notes = models.TextField(null=True, blank=True)
-
-    def paid(self):
-        self.paid_date = timezone.now()
-        self.status = TransactionStatusChoices.PAID 
-        self.save()
+    def __str__(self):
+        return f"{self.address}"
 
 
 class CryptoTransaction(models.Model):
@@ -104,7 +177,9 @@ class CryptoTransaction(models.Model):
         related_name="transactions"
     )
     txid = models.CharField(max_length=100)
-    confirmations = models.IntegerField(default=0)
+    current_confirmations = models.IntegerField(default=0)
+    required_confirmations = models.IntegerField()
     timestamp = models.DateTimeField(auto_now_add=True)
 
-
+    def is_confirmed(self):
+        return self.current_confirmations >= self.required_confirmations

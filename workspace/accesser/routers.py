@@ -1,36 +1,23 @@
 from . import replies
-import telebot
-from access_telebot.settings import TELEBOT_KEY
+from telebot import TeleBot
+from django.conf import settings
 from access_telebot.logger import get_logger
 from messenger.routers import CallbackInlineRouterBase
 
-
-bot = telebot.TeleBot(TELEBOT_KEY, threaded=False)
+bot = TeleBot(settings.TELEBOT_KEY)
 log = get_logger(__name__)
 
 
 class CallbackInlineRouter(CallbackInlineRouterBase):
 
     def route(self):
-        def _is(data: str):
-            return self.callback.data == data        
-        
-        if _is("accesser:my_subs"):
-            return self._build_reply(replies.InlineReplyMySubs)
+        _is = self.is_reply_name
 
-        if _is("accesser:all_subs"):
-            return self._build_reply(replies.InlineReplyAllSubs)
+        if _is("AllSubsReply"):
+            return self.build_reply(replies.AllSubsReply)
 
-        bot.answer_callback_query(
-            self.callback.id, 
-            f"I don't know callback {self.callback.data}"
-        )
+        if _is("MySubsReply"):
+            return self.build_reply(replies.MySubsReply)
 
-    def _build_reply(
-        self, 
-        InlineReply: replies.CallbackInlineReply
-    ):
-        bot.answer_callback_query(self.callback.id)
-        return InlineReply(
-            self.customer, self.callback
-        ).build()
+        return self.reply_not_found()
+

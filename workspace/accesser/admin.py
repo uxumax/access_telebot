@@ -13,6 +13,15 @@ class CustomerChatAccessInline(admin.TabularInline):
     extra = 1  # Количество пустых форм для новых записей
 
 
+class SubscriptionDurationPriceInline(admin.TabularInline):
+    model = models.SubscriptionDurationPrice
+
+    # field order
+    fields = ('duration', 'price')
+
+    extra = 1  # Количество пустых форм для новых записей
+
+
 @admin.register(models.ChatGroup)
 class ChatGroupAdmin(admin.ModelAdmin):
     list_display = ('name', 'display_chats')
@@ -42,9 +51,14 @@ class ChatAdmin(admin.ModelAdmin):
 
 @admin.register(models.Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
-    list_display = ('name', 'slug', 'price', 'duration')
+    list_display = (
+        'name', 
+    )
     list_filter = ('name',)
-    search_fields = ('name', 'slug')
-    inlines = [SubscriptionChatAccessInline]
+    search_fields = ('name',)
+    inlines = [
+        SubscriptionDurationPriceInline,
+        SubscriptionChatAccessInline,
+    ]
 
 

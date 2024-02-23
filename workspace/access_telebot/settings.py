@@ -129,3 +129,7 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Setup crypto payment gateways
+TRON_API_URL = "https://api.trongrid.io"
+TRON_USDT_CONTRACT = "41a614f803b6fd780986a42c78ec9c7f77e6ded13c"
+TRON_CONFIRMATION_COUNT = 19

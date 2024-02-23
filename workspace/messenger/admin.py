@@ -22,7 +22,7 @@ class InlineButtonInline(GenericTabularInline):
 class CallbackInlineReplyAdmin(admin.ModelAdmin):
     list_display = ('callback_data', 'text')
 
-    # Порядок полей
+    # field order
     fields = ('callback_data', 'text')
 
     inlines = [InlineButtonInline]

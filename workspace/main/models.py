@@ -88,9 +88,9 @@ class Customer(CustomerBase):
     def __str__(self):
         return self.username or self.first_name
 
-    def update_last_callback_inline_date(self):
-        self.last_callback_inline_date = timezone.now()
-        self.save()
+#     def update_last_callback_inline_date(self):
+#         self.last_callback_inline_date = timezone.now()
+#         self.save()
 
 
 

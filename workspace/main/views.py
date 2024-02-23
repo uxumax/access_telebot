@@ -1,3 +1,4 @@
+import typing
 from django.shortcuts import render
 from django.views import View
 from django.http import HttpResponse, JsonResponse
@@ -18,7 +19,13 @@ log = get_logger(__name__)
 bot = telebot.TeleBot(TELEBOT_KEY, threaded=False)
 
 
-def _save_or_update_user(user: telebot.types.User) -> None:
+def _save_or_update_user(
+        user: telebot.types.User,
+        come_type: typing.Literal[
+            "COMMAND",
+            "CALLBACK",
+        ]
+    ) -> None:
     """
     Save or update the user information in the Customer model.
     """
@@ -36,6 +43,10 @@ def _save_or_update_user(user: telebot.types.User) -> None:
     customer.can_join_groups = getattr(user, 'can_join_groups', False)
     customer.can_read_all_group_messages = getattr(user, 'can_read_all_group_messages', False)
     customer.supports_inline_queries = getattr(user, 'supports_inline_queries', False)
+
+    if come_type == "CALLBACK":
+        customer.last_callback_inline_date = timezone.now()
+
     customer.save()
 
     return customer
@@ -75,7 +86,7 @@ class CallbackAntiFlooder:
 
         # Проверяем, не слишком ли часто пользователь нажимает кнопку
         if self.customer.last_callback_inline_date \
-                and last_callback_seconds < 2: 
+                and last_callback_seconds < 1: 
             raise TooManyRequestsException(
                 "Too many requests in a short period of time"
             )
@@ -83,25 +94,20 @@ class CallbackAntiFlooder:
 
 @bot.callback_query_handler(func=lambda callback: True)
 def callback_inline_handler(callback: telebot.types.CallbackQuery) -> None:
-    customer = _save_or_update_user(callback.from_user)
-
     try:
-        anti_flooder = CallbackAntiFlooder(customer)
-        anti_flooder.filter()
-    except TooManyRequestsException:
-        # Ответ на callback query с уведомлением о слишком частых запросах
-        bot.answer_callback_query(callback.id, text="Не нажимайте так часто!")
-        return
-
-    customer.update_last_callback_inline_date()
-    messenger.routers.CallbackInlineRouter(customer, callback).route()
-    
+        bot.answer_callback_query(callback.id)
+    except telebot.apihelper.ApiTelegramException:
+        log.warning(
+            f"Answer to callback:{callback.data} has got timeout error"
+        )
+    customer = _save_or_update_user(callback.from_user, "CALLBACK")
+    messenger.routers.route_callback_inline(customer, callback)
 
 @bot.message_handler(func=lambda message: _is_message_command(message))
 def command_handler(message: telebot.types.Message):
-    customer = _save_or_update_user(message.from_user)
-    messenger.routers.CommandRouter(customer, message).route()
-
+    customer = _save_or_update_user(message.from_user, "COMMAND")
+    # messenger.routers.CommandRouter(customer, message).route()
+    messenger.routers.route_command(customer, message)
 
 # General handler for all messages
 @bot.message_handler(func=lambda message: True)

@@ -1,5 +1,5 @@
 from . import replies
-from messenger.types import CallbackInlineRouterBase
+from messenger.routers import CallbackInlineRouterBase
 import telebot
 from access_telebot.settings import TELEBOT_KEY
 from access_telebot.logger import get_logger
@@ -10,22 +10,33 @@ log = get_logger(__name__)
 
 class CallbackInlineRouter(CallbackInlineRouterBase):
     def route(self):
-        def _is(data: str):
-            return self.callback.data == data        
+        _is = self.is_reply_name   
+
+        if _is("ChooseAccessDurationReply"):
+            return self.build_reply(replies.ChooseAccessDurationReply)
+
+        if _is("ChoosePayMethodReply"):
+            return self.build_reply(replies.ChoosePayMethodReply)
         
-        if _is("cashier:build_invoice"):
-            return self._build_reply(replies.InlineReplyMySubs)
+        if _is("CheckoutReply"):
+            return self.build_reply(replies.CheckoutReply) 
+             
+        if _is("NotifyWhenTranzConfirmedReply"):
+            return self.build_reply(replies.NotifyWhenTranzConfirmedReply) 
+        
+        if _is("CryptoTranzCheckReply"):
+            return self.build_reply(replies.CryptoTranzCheckReply) 
+        
+        if _is("CryptoPayDoneReply"):
+            return self.build_reply(replies.CryptoPayDoneReply) 
+        
+        if _is("CryptoPayCancelReply"):
+            return self.build_reply(replies.CryptoPayCancelReply) 
+        
+        if _is("CryptoPayResultReply"):
+            return self.build_reply(replies.CryptoPayResultReply) 
+        
+        if _is("CryptoPayingReply"):
+            return self.build_reply(replies.CryptoPayingReply) 
 
-        bot.answer_callback_query(
-            self.callback.id, 
-            f"I don't know callback {self.callback.data}"
-        )
-
-    def _build_reply(
-        self, 
-        InlineReply: replies.CallbackInlineReply
-    ):
-        bot.answer_callback_query(self.callback.id)
-        return InlineReply(
-            self.customer, self.callback
-        ).build()
+        return self.reply_not_found()

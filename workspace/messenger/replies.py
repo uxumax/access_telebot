@@ -1,37 +1,83 @@
-import telebot
 import typing 
-from importlib import import_module
+from django.conf import settings
+from telebot import TeleBot
+import telebot.types
+from telebot.types import (
+    InlineKeyboardMarkup,
+    InlineKeyboardButton
+)
+from .routers import Callback
 
-from access_telebot.settings import TELEBOT_KEY
 from access_telebot.logger import get_logger
 
 import main.models
-import accesser.models
 import messenger.models
 
 
 log = get_logger(__name__)
-bot = telebot.TeleBot(TELEBOT_KEY, threaded=False)
+bot = TeleBot(settings.TELEBOT_KEY)
 
 
-class CallbackInlineReplyBuilderBase:
+class ReplyBuilder:
+    markup: InlineKeyboardMarkup
+
+    def add_button(
+        self,
+        caption: str,
+        app_name: str = None,
+        reply_name: str = None,
+        args: typing.Union[
+            list, str, int
+        ] = None
+    ):
+        if app_name is None:
+            app_name = self.callback.app_name
+
+        if reply_name is None:
+            raise ValueError(
+                "Arg reply_name is required"
+            )
+
+        string = Callback.stringify(
+            app_name, reply_name, args
+        )
+        self.markup.add(
+            InlineKeyboardButton(
+                caption, callback_data=string
+            )
+        ) 
+
+    def send_message(self, *args, **kwargs):
+        bot.send_message(
+            self.customer.chat_id,
+            *args, **kwargs
+        )
+
+
+class CallbackInlineReplyBuilder(ReplyBuilder):
+    def __init__(
+        self, 
+        router: "CallbackInlineRouter"
+        # customer: main.models.Customer, 
+        # callback: telebot.types.CallbackQuery
+    ):
+        self.router = router
+        self.customer = router.customer
+        self.callback = router.callback
+        self.markup = InlineKeyboardMarkup()
+
+
+class CommandReplyBuilder(ReplyBuilder):
     def __init__(
         self, 
         customer: main.models.Customer, 
-        callback: telebot.types.CallbackQuery
+        # message: typing.Optional[
+        #     telebot.types.Message
+        # ] = None,
     ):
         self.customer = customer
-        self.callback = callback
-
-
-class CommandReplyBuilderBase:
-    def __init__(
-        self, 
-        customer: main.models.Customer, 
-        message: telebot.types.Message,
-    ):
-        self.customer = customer
-        self.message = message
+        # self.message = message
+        self.markup = InlineKeyboardMarkup()
 
 
 class CustomReplyBuilder:
@@ -47,10 +93,10 @@ class CustomReplyBuilder:
             return None
 
         # Создание инлайн-клавиатуры
-        markup = telebot.types.InlineKeyboardMarkup()
+        markup = InlineKeyboardMarkup()
         for button in buttons:
             # Добавление кнопки
-            button = telebot.types.InlineKeyboardButton(
+            button = InlineKeyboardButton(
                 button.caption, callback_data=button.reply.callback_data,
             )
             markup.add(button)

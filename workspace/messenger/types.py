@@ -1,4 +1,4 @@
-import main.models
-import telebot
+import typing
 
+ReplyType = typing.Literal["CALLBACK", "COMMAND"]
 

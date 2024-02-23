@@ -1,24 +1,29 @@
 import typing
 from access_telebot.settings import TELEBOT_KEY
 from access_telebot.logger import get_logger
-import telebot
+from telebot import TeleBot
+
 import main.models
 import accesser.models
-from messenger.replies import CallbackInlineReplyBuilderBase
+
+from messenger.replies import (
+    CallbackInlineReplyBuilder,
+)
+
 from . import models
 
 
-bot = telebot.TeleBot(TELEBOT_KEY, threaded=False)
+bot = TeleBot(TELEBOT_KEY, threaded=False)
 log = get_logger(__name__)
 
 
 CallbackInlineReply = typing.Union[
-    'InlineReplyMySubs',
-    'InlineReplyAllSubs',
+    'AllSubsReply',
+    'MySubsReply',
 ]
 
 
-class InlineReplyAllSubs(CallbackInlineReplyBuilderBase):
+class AllSubsReply(CallbackInlineReplyBuilder):
     def build(self):
         text = (
             "Our plans: "
@@ -31,19 +36,17 @@ class InlineReplyAllSubs(CallbackInlineReplyBuilderBase):
         )  
 
     def _build_markup(self):
-        markup = telebot.types.InlineKeyboardMarkup()
-
         for sub in accesser.models.Subscription.objects.all():
-            markup.add(
-                telebot.types.InlineKeyboardButton(
-                    sub.name, callback_data=sub.slug
-                )
+            self.add_button(
+                sub.name,
+                "cashier", "ChooseAccessDurationReply",
+                args=sub.id
             )
 
-        return markup
+        return self.markup
 
 
-class InlineReplyMySubs(CallbackInlineReplyBuilderBase):
+class MySubsReply(CallbackInlineReplyBuilder):
     def build(self):
         self.customer_chat_accesses = accesser.models.CustomerChatAccess.objects.filter(
             customer=self.customer
@@ -63,13 +66,10 @@ class InlineReplyMySubs(CallbackInlineReplyBuilderBase):
         )  
 
     def _build_markup(self):
-        markup = telebot.types.InlineKeyboardMarkup()
-        button = telebot.types.InlineKeyboardButton
-
         # payments buttons
 
-        return markup
-
+        return None  # self.markup
+ 
     def _get_text(self):
         text = (
             "You have these subscriptions: \n"

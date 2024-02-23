@@ -1,50 +1,61 @@
-import telebot
+from telebot import TeleBot
+from telebot.types import (
+    InlineKeyboardMarkup,
+    InlineKeyboardButton
+)
+
 import typing
 
-from messenger.replies import CommandReplyBuilderBase
+from messenger.replies import CommandReplyBuilder
+from messenger.routers import Callback
+
 from access_telebot.settings import TELEBOT_KEY
 
 
-bot = telebot.TeleBot(TELEBOT_KEY, threaded=False)
+bot = TeleBot(TELEBOT_KEY)
 
 
 CommandReply = typing.Union[
-    'CommandReplyStart',
+    'StartCommandReply',
 ]
 
 
-class CommandReplyStart(CommandReplyBuilderBase):
+class StartCommandReply(CommandReplyBuilder):
     def build(self):
         text = (
             "Hi. I am your accessbot"
         )
-
-        bot.reply_to(
-            self.message,
+       
+        self.send_message(
             text,
             reply_markup=self._build_markup()
-        )        
+        )
 
     def _build_markup(self):
-        markup = telebot.types.InlineKeyboardMarkup()
-        button = telebot.types.InlineKeyboardButton
-
-        markup.add(
-            button(
-                "Plans", callback_data="accesser:all_subs"
-            )
+        self.add_button(
+            "Plans",
+            app_name="accesser",
+            reply_name="AllSubsReply"
         )
 
-        markup.add(
-            button(
-                "My plan", callback_data="accesser:my_subs"
-            )
-        )
+        return self.markup
 
-        markup.add(
-            button(
-                "Contact", callback_data="raw_contact"
-            )
-        )
+        # markup.add(
+        #     InlineKeyboardButton(
+        #         "Plans", callback_data="accesser:AllSubsReply"
+        #     )
+        # )
+        
+        # markup.add(
+        #     InlineKeyboardButton(
+        #         "My plan", callback_data="accesser:MySubsReply"
+        #         )
+        #     )
+        
+        # markup.add(
+        #     InlineKeyboardButton(
+        #         "Contact", callback_data="raw_contact"
+        #     )
+        # )
 
         return markup

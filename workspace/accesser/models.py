@@ -1,7 +1,10 @@
+from datetime import timedelta
+
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
 from django.db.models import QuerySet
+
 import main.models
 
 
@@ -67,12 +70,19 @@ class Chat(models.Model):
 
 class Subscription(models.Model):
     name = models.CharField(max_length=100)
-    slug = models.SlugField(unique=True)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    duration = models.DurationField()
 
     def __str__(self):
         return f"({self.name})"
+
+
+class SubscriptionDurationPrice(models.Model):
+    subscription = models.ForeignKey(
+        Subscription,
+        on_delete=models.CASCADE,
+        related_name="durations"
+    )
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    duration = models.DurationField(default=timedelta(days=30))    
 
 
 class SubscriptionChatAccess(models.Model):

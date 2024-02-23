@@ -5,17 +5,7 @@ import time
 import requests
 from decimal import Decimal
 
-# Private Key is  62e86df2b96a2b3a3c262b0831a5934d989cba62513cbf15ec081d233650ccdc
-# Account Address is  TT6yQgS8DhqCgbLBRtaejdiergM6xp2LFK
-# private_key = PrivateKey(
-#     bytes.fromhex(
-#         "62e86df2b96a2b3a3c262b0831a5934d989cba62513cbf15ec081d233650ccdc"
-#     )
-# )
-# client = Tron(HTTPProvider(api_key="85809ba2-ae5c-4f57-ae5d-6095e79395c7"))
-
-# base_address = "TT6yQgS8DhqCgbLBRtaejdiergM6xp2LFK"
-# recipient_address = "TFAEqAkD7AhFPazqmrUvVqyg39awDi9tNY"
+from cashier import models
 
 TRONGRID_API_KEY = "85809ba2-ae5c-4f57-ae5d-6095e79395c7"
 DEFAULT_FEE_LIMIT = 28_000_000
@@ -36,6 +26,20 @@ def create_tron_account():
     priv_key = PrivateKey.random()
     account = priv_key.public_key.to_base58check_address()
     return account, priv_key
+
+
+def get_free_address_model():
+    model = models.TronAddress.objects.filter(
+        status="FREE"
+    ).first()
+    if model is None:
+        address, private_key = create_tron_account()
+        model = models.TronAddress.objects.create(
+            address=address,
+            private_key=private_key,
+            status="BUSY"
+        )
+    return model
 
 
 def send_usdt(
