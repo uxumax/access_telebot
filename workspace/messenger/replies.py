@@ -38,14 +38,20 @@ class ReplyBuilder:
                 "Arg reply_name is required"
             )
 
-        string = Callback.stringify(
+        callback = Callback.stringify(
             app_name, reply_name, args
         )
         self.markup.add(
             InlineKeyboardButton(
-                caption, callback_data=string
+                caption, callback_data=callback
             )
         ) 
+        messenger.models.ShowedInlineButton.objects.update_or_create(
+            callback_data=callback,
+            defaults={
+                "caption": caption
+            }
+        )
 
     def send_message(self, *args, **kwargs):
         bot.send_message(

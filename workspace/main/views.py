@@ -10,6 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 import messenger.replies
 import messenger.routers
+import messenger.models
 
 from access_telebot.settings import TELEBOT_KEY
 from access_telebot.logger import get_logger
@@ -61,61 +62,83 @@ class TooManyRequestsException(Exception):
     pass
 
 
-class CallbackAntiFlooder:
-    def __init__(
-        self, 
-        customer: telebot.types.User,
-    ):
-        self.customer = customer
-        self.log = get_logger(__name__)
+# class CallbackAntiFlooder:
+#     def __init__(
+#         self, 
+#         customer: telebot.types.User,
+#     ):
+#         self.customer = customer
+#         self.log = get_logger(__name__)
 
-    def filter(self) -> None:
-        """Фильтр для проверки флуда."""
-        current_time = timezone.now()
+#     def filter(self) -> None:
+#         """Фильтр для проверки флуда."""
+#         current_time = timezone.now()
 
-        last_callback_seconds = (
-            current_time - self.customer.last_callback_inline_date
-        ).total_seconds()
+#         last_callback_seconds = (
+#             current_time - self.customer.last_callback_inline_date
+#         ).total_seconds()
 
-        self.log.debug(
-            f"last_callback_seconds {last_callback_seconds} \n"
-            f"current_time {current_time} \n"
-            f"self.customer.last_callback_inline_date \
-                {self.customer.last_callback_inline_date} \n"
-        )
+#         self.log.debug(
+#             f"last_callback_seconds {last_callback_seconds} \n"
+#             f"current_time {current_time} \n"
+#             f"self.customer.last_callback_inline_date \
+#                 {self.customer.last_callback_inline_date} \n"
+#         )
 
-        # Проверяем, не слишком ли часто пользователь нажимает кнопку
-        if self.customer.last_callback_inline_date \
-                and last_callback_seconds < 1: 
-            raise TooManyRequestsException(
-                "Too many requests in a short period of time"
-            )
+#         # Проверяем, не слишком ли часто пользователь нажимает кнопку
+#         if self.customer.last_callback_inline_date \
+#                 and last_callback_seconds < 1: 
+#             raise TooManyRequestsException(
+#                 "Too many requests in a short period of time"
+#             )
 
 class InlineCallbackFirstHandler:
     def __init__(self, callback: telebot.types.CallbackQuery):
         self.callback = callback
         self._answer_to_callback()
-        self._remove_used_reply_markup()
+        self._set_selected_button()
 
     def _answer_to_callback(self):
         try:
             bot.answer_callback_query(self.callback.id)
         except telebot.apihelper.ApiTelegramException:
             log.warning(
-                f"Answer to callback:{callback.data} has got timeout error"
+                f"Answer to callback:{self.callback.data} has got timeout error"
             )
 
-    def _remove_used_reply_markup(self):
+    def _set_selected_button(self):
         try:
-            bot.edit_message_reply_markup(
+            bot.edit_message_text(
                 chat_id=self.callback.message.chat.id, 
                 message_id=self.callback.message.message_id,
+                text=self._get_edited_text(),
                 reply_markup=None
             )       
         except Exception as e:
+            msg = self.callback.message
             log.exception(
-                f"Cannot remove used reply markup: {e}"
+                f"Cannot set selected button to message {msg}: {e}"
             )
+
+    def _get_edited_text(self):
+        current_text = self.callback.message.text
+        button_caption = self._get_button_caption()
+        new_text = f"{current_text}\n_________\n{button_caption}"
+        return new_text
+
+    def _get_button_caption(self):
+        ShowedInlineButton = messenger.models.ShowedInlineButton
+        try:
+            showed_button = ShowedInlineButton.objects.get(
+                callback_data=self.callback.data
+            )
+        except ShowedInlineButton.DoesNotExist:
+            self.warning(
+                "Cannot set selected button coz callback_data "
+                "not exists in messenger.ShowedInlineButton model records"\
+            )
+            raise ShowedInlineButton.DoesNotExist()
+        return showed_button.caption
 
 
 @bot.callback_query_handler(func=lambda callback: True)
@@ -124,11 +147,13 @@ def callback_inline_handler(callback: telebot.types.CallbackQuery) -> None:
     customer = _save_or_update_user(callback.from_user, "CALLBACK")
     messenger.routers.route_callback_inline(customer, callback)
 
+
 @bot.message_handler(func=lambda message: _is_message_command(message))
 def command_handler(message: telebot.types.Message):
     customer = _save_or_update_user(message.from_user, "COMMAND")
     # messenger.routers.CommandRouter(customer, message).route()
     messenger.routers.route_command(customer, message)
+
 
 # General handler for all messages
 @bot.message_handler(func=lambda message: True)

@@ -68,3 +68,18 @@ class Notification(BotMessage):
 
     alert_date = models.DateTimeField(default=timezone.now)
     is_sent = models.BooleanField(default=False)
+
+
+class ShowedInlineButton(models.Model):
+    caption = models.CharField(max_length=255, verbose_name='Caption')
+    callback_data = models.CharField(max_length=255, unique=True, verbose_name='Callback Data')
+
+    def __str__(self):
+        return f"{self.caption} ({self.callback_data})"
+
+    class Meta:
+        verbose_name = 'Showed Inline Button'
+        verbose_name_plural = 'Showed Inline Buttons'
+
+
+
