@@ -91,15 +91,36 @@ class CallbackAntiFlooder:
                 "Too many requests in a short period of time"
             )
 
+class InlineCallbackFirstHandler:
+    def __init__(self, callback: telebot.types.CallbackQuery):
+        self.callback = callback
+        self._answer_to_callback()
+        self._remove_used_reply_markup()
+
+    def _answer_to_callback(self):
+        try:
+            bot.answer_callback_query(self.callback.id)
+        except telebot.apihelper.ApiTelegramException:
+            log.warning(
+                f"Answer to callback:{callback.data} has got timeout error"
+            )
+
+    def _remove_used_reply_markup(self):
+        try:
+            bot.edit_message_reply_markup(
+                chat_id=self.callback.message.chat.id, 
+                message_id=self.callback.message.message_id,
+                reply_markup=None
+            )       
+        except Exception as e:
+            log.exception(
+                f"Cannot remove used reply markup: {e}"
+            )
+
 
 @bot.callback_query_handler(func=lambda callback: True)
 def callback_inline_handler(callback: telebot.types.CallbackQuery) -> None:
-    try:
-        bot.answer_callback_query(callback.id)
-    except telebot.apihelper.ApiTelegramException:
-        log.warning(
-            f"Answer to callback:{callback.data} has got timeout error"
-        )
+    InlineCallbackFirstHandler(callback)
     customer = _save_or_update_user(callback.from_user, "CALLBACK")
     messenger.routers.route_callback_inline(customer, callback)
 
