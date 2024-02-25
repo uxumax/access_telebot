@@ -84,12 +84,15 @@ class SubscriptionDurationPrice(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     duration = models.DurationField(default=timedelta(days=30))    
 
+    def __str__(self):
+        return f"{self.subscription.name} | {self.duration} | {self.price}"
+
 
 class SubscriptionChatAccess(models.Model):
     subscription = models.ForeignKey(
         Subscription,
         on_delete=models.CASCADE,
-        related_name="access_to_chats"
+        related_name="access_to_chat_groups",
     )
     chat_group = models.ForeignKey(
         ChatGroup,

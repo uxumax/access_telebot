@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from importlib import import_module
 from telebot import TeleBot
 from django.conf import settings
+from django.db import transaction
 from access_telebot.logger import get_logger
 import main.models
 import telebot.types
@@ -146,7 +147,8 @@ class CallbackInlineRouterBase:
     ):
         builder = InlineReply(self)
         # bot.answer_callback_query(self.callback.id)
-        builder.build()
+        with transaction.atomic():
+            builder.build()
         self.log.debug(
             f"Has been built reply for callback:\n"
             f"{(self.callback.app_name, self.callback.reply_name)}"
@@ -263,7 +265,8 @@ class CommandRouterBase:
         InlineReply: "replies.CommandReplyBuilder"
     ):
         builder = InlineReply(self.customer)
-        builder.build()
+        with transaction.atomic():
+            builder.build()
         self.log.debug(
             f"Has been built reply {self.reply_name}:"
         )

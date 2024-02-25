@@ -39,6 +39,7 @@ class BuildingInvoiceReplyBuilder(CallbackInlineReplyBuilder):
         return hasattr(self.customer, "building_invoice")\
             and self.customer.building_invoice is not None
 
+
 class ChooseAccessDurationReply(BuildingInvoiceReplyBuilder):
     USING_ARGS = (
         "subscription_id",
@@ -238,6 +239,7 @@ class CryptoPayingReply(BuildingInvoiceReplyBuilder):
         invoice = models.CryptoInvoice.objects.create(
             customer=i.customer,
             subscription=i.subscription,
+            duration=i.duration,
             network=i.network,
             currency=i.currency,
             amount=i.amount,
@@ -379,7 +381,10 @@ class CryptoTranzCheckReply(CryptoInvoicePayingReplyBulder):
             return self.router.redirect(
                 app_name="accesser",
                 reply_name="GiveInviteLinksReply",
-                args=self.invoice.id
+                args=[
+                    "c", # invoice code for crypto invoices
+                    self.invoice.id,
+                ]
             )
         else:
             self.send_message(

@@ -19,9 +19,10 @@ class CryptoInvoiceStatusChoice(models.TextChoices):
     PAYING = "PAYING", "PAYING"
     PAID = "PAID", "PAID"
     CONFIRMED = "CONFIRMED", "CONFIRMED"
+    REDEEMED = "REDEEMED", "REDEEMED"
     CANCELED = "CANCELED", "CANCELED"
     EXPIRED = "EXPIRED", "EXPIRED"
-
+    
 
 class CryptoCurrencyChoices(models.TextChoices):
     USDT = "USDT", "USDT"
@@ -102,6 +103,11 @@ class CryptoInvoice(models.Model):
     subscription = models.ForeignKey(
         accesser.models.Subscription, 
         on_delete=models.SET_NULL,
+        null=True
+    )
+    duration = models.ForeignKey(
+        accesser.models.SubscriptionDurationPrice,
+        on_delete=models.CASCADE, 
         null=True
     )
     address = models.CharField(

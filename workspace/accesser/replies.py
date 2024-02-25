@@ -1,16 +1,21 @@
 import typing
+from datetime import datetime, timedelta
+from django.utils import timezone
 from access_telebot.settings import TELEBOT_KEY
 from access_telebot.logger import get_logger
 from telebot import TeleBot
 
 import main.models
 import accesser.models
+import cashier.models
+from . import models
 
 from messenger.replies import (
     CallbackInlineReplyBuilder,
 )
 
-from . import models
+        
+
 
 
 bot = TeleBot(TELEBOT_KEY, threaded=False)
@@ -111,45 +116,148 @@ class MySubsReply(CallbackInlineReplyBuilder):
         return text  
 
 
-# class TronInvoiceBuildRouter:
-#     def __init__(
-#         self,
-#         # customer: main.models.Customer
-#     ):
-#         pass
-#         # self.customer = customer
+class GiveInviteLinksReply(CallbackInlineReplyBuilder):
+    USING_ARGS = (
+        "invoice_type_code",
+        "confirmed_invoice_id",
+    )
 
-#     def build(
-#         self,
-#         customer,
-#         subscription,
-#         network,
-#         amount,
+    def build(self):
+        invoice = self._get_invoice()
+        if invoice.status != "CONFIRMED":
+            self.send_message(
+               "Cannot give give keys coz connot find your confirmed invoice"       
+            )
 
-#     ) -> models.CryptoInvoice:
-#         address = self._get_free_address()
-#         if address is None:
-#             address = self._create_new_address()
+        customer_chat_accesses = self._assign_subscription_access(
+            invoice.subscription, 
+            invoice.duration.duration,        
+        )
+        
+        invite_links = self._get_invite_links(customer_chat_accesses)
+        invite_links_text = self._get_invite_links_text(invite_links)
+        self.send_message(
+            text=(
+                "Here are your invite links:\n"
+                f"{invite_links_text}",
+            )
+        )
 
-#         invoice = models.CryptoInvoice.objects.create(
-#             customer=customer,
-#             subscription=subscription,
+        valid_until_date = (
+            timezone.now() + invoice.duration.duration
+        ).strftime("%B %d, %Y %H:%M")
+        self.send_message(
+            f"All invite links will be valid until {valid_until_date}"
+        )
 
-#         )
-#         return invoice
+        invoice.status = "REDEEMED"
+        invoice.save()
 
-#     @staticmethod
-#     def _get_free_address():
-#         return models.TronAddress.objects.filter(
-#             status=models.TronAddressStatusChoices.FREE
-#         ).first()
+    def _get_invoice(self):
+        invoice_type_code = self._get_invoice_type_code()
+        invoice_id = self._get_confirmed_invoice_id()
+        if invoice_type_code == "c":  # crypto invoices
+            return self._get_crypto_invoice(invoice_id)
+        else:
+            raise ValueError(
+                f"Unsupported invoice type code {invoice_type_code}"
+            )
+    
+    def _get_crypto_invoice(
+        self,
+        invoice_id: int
+    ):
+        try:
+            return cashier.models.CryptoInvoice.objects.select_related(
+                'subscription', 
+                'duration',
+                'customer',
+            ).get(
+                id=invoice_id, 
+                customer=self.customer,
+                status="CONFIRMED",
+            )
+        except cashier.models.CryptoInvoice.DoesNotExist:
+            self.send_message(
+                "Cannot find your invoice"
+            )
+            raise Exception(
+                f"Cannot find confirmed invoice with id {invoice_id}"
+            )
 
-#     @staticmethod
-#     def _create_new_address() -> models.TronAddress:
-#         address, private_key = tron_wallet.create_tron_account()
-#         address = models.TronAddress.objects.create(
-#             address=address,
-#             private_key=private_key,
-#             status=models.TronAddressStatusChoices.BUSY
-#         )
-#         return address
+    def _get_invoice_type_code(self) -> str:
+        return self.callback.args[0]
+
+    def _get_confirmed_invoice_id(self) -> int:
+        return int(self.callback.args[1])
+
+    def _assign_subscription_access(
+        self,
+        subscription: models.Subscription,
+        duration: timedelta,
+    ) -> None:
+        start_date = timezone.now()
+        end_date = start_date + duration
+        accesses = []
+        for access in subscription.access_to_chat_groups.all():
+            access = models.CustomerChatAccess.objects.create(
+                customer=self.customer,
+                chat_group=access.chat_group,
+                start_date=start_date,
+                end_date=end_date,
+                subscription=subscription,
+                active=True,
+            )
+            accesses.append(access)
+        return accesses
+
+    def _get_invite_links(
+        self,
+        customer_chat_accesses: typing.List[
+            models.CustomerChatAccess,
+        ]
+    ) -> list:
+        links = []
+        for access in customer_chat_accesses:
+            for chat in access.chat_group.chats.all():
+                link = self._create_invite_link(
+                    chat.chat_id, access.end_date
+                ) 
+                links.append(
+                    (chat.title, link)
+                )
+        return links
+
+    def _create_invite_link(self, chat_id: int, end_date: datetime) -> str: 
+        expire_timestamp = int(end_date.timestamp())
+        link_name = self._get_invite_link_name(chat_id)
+        try:    
+            invite_link = bot.create_chat_invite_link(
+                chat_id=chat_id,  
+                expire_date=expire_timestamp,           # Expiration date as a Unix timestamp
+                name=link_name,
+                creates_join_request=False               # This will require administrators to approve join requests
+            )
+        except Exception as e:
+            log.exception(e)
+        return invite_link.invite_link
+
+    def _get_invite_link_name(self, chat_id: int):
+        time = timezone.now().timestamp()  # for uniqilize link name
+        return (
+            "{self.customer.chat_id}:{chat_id}:{time}"
+        )
+
+    def _get_invite_links_text(
+        self, 
+        links: typing.List[
+            typing.Tuple[str, str]
+        ]
+    ):
+        text = ""
+        for chat_title, link in links:
+            text += f"-- {chat_title} - {link}\n"
+        return text
+
+
+
