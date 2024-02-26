@@ -90,6 +90,13 @@ class BuildingInvoice(TempModelAbstract):
         choices=CurrencyTypeChoices.choices,
         null=True
     )
+    expire_date = models.DateTimeField()
+
+    def save(self, *args, **kwargs):
+        from . import signals
+        if self.pk is None:  # is creating
+            signals.BuildingInvoicePreCreate(self)
+        super().save(*args, **kwargs)
 
 
 class CryptoInvoice(models.Model):

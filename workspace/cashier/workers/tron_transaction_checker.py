@@ -5,7 +5,7 @@ from time import sleep
 
 from access_telebot.logger import get_logger
 import cashier.models
-import cashier.typing
+import cashier.types
 
 from django.conf import settings
 
@@ -13,7 +13,7 @@ from django.conf import settings
 class TronTransactionDataDecoder:
     def __init__(
         self, 
-        transaction: cashier.typing.ResponseTronContactTransaction,
+        transaction: cashier.types.ResponseTronContactTransaction,
         current_block_number: int
     ):
         self.transaction = transaction
@@ -44,7 +44,7 @@ class TronTransactionDataDecoder:
 class TronTransactionsGetter:    
     @classmethod
     def get_all(cls, address: str) -> typing.List[
-        cashier.typing.DecodedTransaction
+        cashier.types.DecodedTransaction
     ]:
         current_block_number = cls._get_current_block_number()
         tron_transactions = cls._get_transactions(address)
@@ -100,7 +100,7 @@ class InvoiceTransactionChecker:
         self, 
         invoice: cashier.models.CryptoInvoice, 
         last_transactions: typing.List[
-            cashier.typing.DecodedTransaction
+            cashier.types.DecodedTransaction
         ],
     ):
         self.invoice = invoice
@@ -124,9 +124,9 @@ class InvoiceTransactionChecker:
         self, 
         invoice,
         transactions: typing.List[
-            cashier.typing.DecodedTransaction
+            cashier.types.DecodedTransaction
         ]
-    ) -> typing.Optional[cashier.typing.DecodedTransaction]:
+    ) -> typing.Optional[cashier.types.DecodedTransaction]:
         for tx in transactions:
             
             if tx["confirmations"] == 0:

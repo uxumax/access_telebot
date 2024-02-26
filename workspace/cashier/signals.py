@@ -10,10 +10,19 @@ from access_telebot.logger import get_logger
 from . import wallets
 from . import models
 
+log = get_logger(__name__)
+
+
+class BuildingInvoicePreCreate():
+    def __init__(self, instance: models.BuildingInvoice):
+        i = instance
+        i.expire_date = self._get_expire_date()
+
+    def _get_expire_date(self):
+        return timezone.now() + models.BuildingInvoice.BUILDING_TIMEOUT
+
 
 class CryptoInvoicePreCreate:
-    log = get_logger(__name__)
-
     def __init__(self, instance: models.CryptoInvoice):
         i = instance
         i.address = self._get_address(i.network)
@@ -36,8 +45,8 @@ class CryptoInvoicePreCreate:
         return timezone.now() + models.CryptoInvoice.PAYING_TIMEOUT
         
 
+# abstract
 class CryptoInvoiceFinal:
-
     @staticmethod
     def free_address(address):
         models.TronAddress.objects.filter(

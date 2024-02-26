@@ -1,7 +1,9 @@
 from django.core.management.base import BaseCommand, CommandError
 from importlib import import_module
-from cashier.workers import tron_transaction_checker
-
+from cashier.workers import (
+    tron_transaction_checker,
+    invoice_expire_checker,
+)
 
 class Command(BaseCommand):
     help = 'Run worker in this thread'
@@ -13,14 +15,14 @@ class Command(BaseCommand):
             help='App name for run'
         )
         parser.add_argument(
-            'worker_name_py', 
+            'worker_filename_py', 
             type=str, 
             help='Worker filename for run'
         )
 
     def handle(self, *args, **options):
         app_name = options['app_name']
-        worker_filename = options['worker_name_py']
+        worker_filename = options['worker_filename_py']
 
         try:
             workers_module = import_module(f"{app_name}.workers")
