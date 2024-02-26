@@ -10,9 +10,6 @@ import cashier.typing
 from django.conf import settings
 
 
-TRON_ADDRESS = "TFAEqAkD7AhFPazqmrUvVqyg39awDi9tNY"
-
-
 class TronTransactionDataDecoder:
     def __init__(
         self, 
