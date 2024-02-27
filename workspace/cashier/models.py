@@ -63,32 +63,38 @@ class BuildingInvoice(TempModelAbstract):
     subscription = models.ForeignKey(
         accesser.models.Subscription, 
         on_delete=models.CASCADE, 
-        null=True
+        null=True,
+        blank=True
     )
     duration = models.ForeignKey(
         accesser.models.SubscriptionDurationPrice,
         on_delete=models.CASCADE, 
-        null=True
+        null=True,
+        blank=True
     )
     amount = models.DecimalField(
         max_digits=19, 
         decimal_places=6,
-        null=True
+        null=True,
+        blank=True
     )
     network = models.CharField(
         max_length=100,
         choices=CryptoNetworkChoices.choices,
-        null=True
+        null=True,
+        blank=True
     )
     currency = models.CharField(
         max_length=10,
         choices=CryptoCurrencyChoices.choices,
-        null=True
+        null=True,
+        blank=True
     )
     currency_type = models.CharField(
         max_length=6,
         choices=CurrencyTypeChoices.choices,
-        null=True
+        null=True,
+        blank=True
     )
     expire_date = models.DateTimeField()
 

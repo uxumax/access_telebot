@@ -118,7 +118,7 @@ class CustomerChatAccess(models.Model):
     active = models.BooleanField(default=True)
 
     def __str__(self):
-        return f"({self.customer.chat_id}:{self.chat_group.id}:{self.end_date})"
+        return f"({self.id}:{self.customer.id}:{self.end_date})"
 
 
 def create_access_records(customer_id: int, subscription_id: int):

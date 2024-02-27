@@ -261,4 +261,53 @@ class GiveInviteLinksReply(CallbackInlineReplyBuilder):
         return text
 
 
+class RevokeAccessNotificationReply(CallbackInlineReplyBuilder):
+    USING_ARGS = (
+        "revoked_access_id",
+    )
+
+    def build(self):
+        revoked_access = self._get_revoked_access()
+        revoked_chats_list_text = self._get_revoked_chat_list_text(
+            revoked_access
+        )
+
+        self.send_message(
+            "Your access to these channels has been revoked:\n"
+            f"{revoked_chats_list_text}",
+            reply_markup=self._build_markup(revoked_access)
+        )
+
+    def _get_revoked_access(self):
+        access_id = self._get_revoked_access_id()
+        return models.CustomerChatAccess.objects.get(
+            pk=access_id,
+            active=False
+        )
+
+    def _get_revoked_access_id(self):
+        return self.callback.args[0]
+
+    def _get_revoked_chat_list_text(
+        self, 
+        revoked_access: models.CustomerChatAccess
+    ):
+        text = ""
+        for chat in revoked_access.chat_group.chats.all():
+            row = f"-- {chat.title}\n"
+            text += row
+        return row
+    
+    def _build_markup(
+        self,
+        revoked_access: models.CustomerChatAccess
+    ):
+        if revoked_access.subscription is not None:
+            self.add_button(
+                "Buy access again",
+                app_name="cashier",
+                reply_name="ChooseAccessDurationReply",
+                args=revoked_access.subscription.id
+            )
+        return self.markup
 

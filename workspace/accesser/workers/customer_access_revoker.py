@@ -25,6 +25,7 @@ class CustomerAccessRevokeWorker:
                 f"Access {access} has been revoked in Telegram API"
             )
             self._set_inactive(access)
+            self._notify_customer(access)
 
     @staticmethod
     def _get_all_expired_accesses():
@@ -44,6 +45,15 @@ class CustomerAccessRevokeWorker:
     def _set_inactive(access):
         access.active = False
         access.save()
+
+    @staticmethod
+    def _notify_customer(access):
+        return build_callback_inline_reply(
+            customer=access.customer,
+            app_name="accesser",
+            reply_name="RevokeAccessNotificationReply",
+            args=[access.id]
+        )
 
 
 def start():
