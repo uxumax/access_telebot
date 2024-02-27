@@ -233,9 +233,10 @@ class GiveInviteLinksReply(CallbackInlineReplyBuilder):
         link_name = self._get_invite_link_name(chat_id)
         try:    
             invite_link = bot.create_chat_invite_link(
+                name=link_name,
                 chat_id=chat_id,  
                 expire_date=expire_timestamp,           # Expiration date as a Unix timestamp
-                name=link_name,
+                member_limit=1,
                 creates_join_request=False               # This will require administrators to approve join requests
             )
         except Exception as e:
