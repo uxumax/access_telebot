@@ -5,6 +5,10 @@ from cashier.workers import (
     invoice_expire_checker,
     invoice_confirm_checker,
 )
+from accesser.workers import (
+    customer_access_revoker,
+)
+
 
 class Command(BaseCommand):
     help = 'Run worker in this thread'

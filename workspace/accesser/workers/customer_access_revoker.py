@@ -2,7 +2,7 @@ from django.utils import timezone
 from access_telebot.logger import get_logger
 import telebot
 from time import sleep
-from . import models
+from accesser import models
 from access_telebot.settings import (
     TELEBOT_KEY,
 )
@@ -44,3 +44,8 @@ class CustomerAccessRevokeWorker:
     def _set_inactive(access):
         access.active = False
         access.save()
+
+
+def start():
+    CustomerAccessRevokeWorker().start_loop()
+
