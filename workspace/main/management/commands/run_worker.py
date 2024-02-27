@@ -40,4 +40,4 @@ class Command(BaseCommand):
                 f'Worker filename "{worker_filename}" not found in application "{app_name}".'
             )
 
-        worker.start()
+        worker.Worker().start()

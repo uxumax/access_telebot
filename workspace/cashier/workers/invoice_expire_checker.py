@@ -1,6 +1,7 @@
 from time import sleep
 from django.utils import timezone
 
+from main.workers import core
 from access_telebot.logger import get_logger
 from cashier.models import (
     BuildingInvoice,
@@ -10,12 +11,15 @@ from cashier.models import (
 log = get_logger(__name__)
 
 
-class InvoiceExpireCheckWorker:
-    def start_loop(self, interval=60 * 1):
-        while True:
-            self._delete_expired_building_invoices()
-            self._set_expired_paying_crypto_invoices()
-            sleep(interval)
+class Worker(core.Worker):
+    def start(self, interval=60 * 1):
+        while not self.stop_event.is_set():
+            self._beat()
+            self.stop_event.wait(interval)
+
+    def _beat(self):
+        self._delete_expired_building_invoices()
+        self._set_expired_paying_crypto_invoices()
 
     @staticmethod
     def _delete_expired_building_invoices():
@@ -39,5 +43,3 @@ class InvoiceExpireCheckWorker:
             log.info(f"Set {updated_count} crypto invoices as expired.")
 
 
-def start():
-    InvoiceExpireCheckWorker().start_loop()

@@ -1,7 +1,9 @@
 from access_telebot.logger import get_logger
 from access_telebot.serveo_tunnel_maker import ServeoTunnelMaker
 import typing
+
 import main.models
+from main.workers import core
 import requests
 import telebot
 from time import sleep
@@ -77,16 +79,20 @@ class TelegramWebhooker:
         if url is not None:
             if cls.is_webhook_working(url):
                 return url
-
+        
         cls.log.info(
             f"Current webhook url: {url} is not working"
             " Create new one..."
         )
         
         url = cls.get_new_webhook_url()
-        
+        if not cls.is_webhook_working(url):
+            raise Exception(
+                "Has been made new webhook but new tunnel not working too"
+            )
+
         cls.log.info(
-            f"New webhook has been made: {url}"
+            f"New webhook has been made and working: {url}"
         )
 
         return url
@@ -96,10 +102,23 @@ class WebhookUrlIsNotWorkingException(Exception):
     pass
 
 
-class WebHookTunnelWorker:
+class Worker(core.Worker):
     log = get_logger(__name__)
     webhooker = TelegramWebhooker
 
+    def start(self):
+        webhook_url = self.webhooker.get_webhook_url()
+        bot.delete_webhook()
+        bot.set_webhook(url=webhook_url)        
+
+        while not self.stop_event.is_set():
+            try:
+                self._check_webhook_url(webhook_url)
+            except WebhookUrlIsNotWorkingException:
+                return self.start()
+
+            sleep(10)
+    
     def _check_webhook_url(self, webhook_url):
         if self.webhooker.is_webhook_working(webhook_url):
             return
@@ -108,15 +127,3 @@ class WebHookTunnelWorker:
                 "Webhook is not working"
             )
 
-    def start_loop(self):
-        webhook_url = self.webhooker.get_webhook_url()
-        bot.delete_webhook()
-        bot.set_webhook(url=webhook_url)        
-
-        while True:
-            try:
-                self._check_webhook_url(webhook_url)
-            except WebhookUrlIsNotWorkingException:
-                return self.start_loop()
-
-            sleep(10)

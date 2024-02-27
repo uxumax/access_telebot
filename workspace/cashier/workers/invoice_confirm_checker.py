@@ -1,6 +1,7 @@
 from time import sleep
 from django.utils import timezone
 
+from main.workers import core
 from access_telebot.logger import get_logger
 from messenger.routers import build_callback_inline_reply
 from cashier.models import (
@@ -10,11 +11,11 @@ from cashier.models import (
 log = get_logger(__name__)
 
 
-class InvoiceConfirmCheckWorker:
-    def start_loop(self, interval=60 * 1):
-        while True:
+class Worker(core.Worker):
+    def start(self, interval=60 * 1):
+        while not self.stop_event.is_set():
             self._beat()
-            sleep(interval)
+            self.stop_event.wait(interval)
 
     def _beat(self):
         for invoice in self._get_confirmed_crypto_invoices():
@@ -36,5 +37,3 @@ class InvoiceConfirmCheckWorker:
         )  
 
 
-def start():
-    InvoiceConfirmCheckWorker().start_loop()

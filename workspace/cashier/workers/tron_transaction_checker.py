@@ -3,11 +3,15 @@ import typing
 from decimal import Decimal
 from time import sleep
 
+from main.workers import core
 from access_telebot.logger import get_logger
 import cashier.models
 import cashier.types
 
 from django.conf import settings
+
+
+log = get_logger(__name__)
 
 
 class TronTransactionDataDecoder:
@@ -148,25 +152,23 @@ class InvoiceTransactionChecker:
         )
 
 
-class TronTransactionCheckWorker:
-    log = get_logger(__name__)
-
-    def start_loop(self):
-        while True:
+class Worker(core.Worker):
+    def start(self, interval=60 * 3):
+        while not self.stop_event.is_set():
             self._beat()
-            sleep(60 * 3)  # 3 minutes
+            self.stop_event.wait(interval)
 
     def _beat(self):
         invoices = self._get_new_invoices()
         if not invoices:
-            self.log.debug(
+            log.debug(
                 "Do not have new invoices"
             )
             return
 
         for invoice in invoices:
             transactions = TronTransactionsGetter.get_all(invoice.address)
-            self.log.debug(
+            log.debug(
                 f"Got {len(transactions)} tron transactions from API "
                 "for check invoice {invoice} payment"
             )
@@ -176,25 +178,25 @@ class TronTransactionCheckWorker:
             )
 
             if checker.no_transaction():
-                self.log.debug(
+                log.debug(
                     f"No any transaction for invoice {invoice}"
                 )
                 continue
 
             if checker.no_confirmations():
-                self.log.debug(
+                log.debug(
                     f"No any confirmations for invoice {invoice}"
                 )
                 continue
 
             if checker.not_enough_confirmations():
-                self.log.debug(
+                log.debug(
                     f"Not enough confirmations for invoice {invoice}"
                 )
                 continue
 
             invoice.confirmed()
-            self.log.info(
+            log.info(
                 f"Invoice {invoice} has been confirmed"
             )
     
@@ -205,5 +207,3 @@ class TronTransactionCheckWorker:
         ).all()
 
 
-def start():
-    TronTransactionCheckWorker().start_loop()

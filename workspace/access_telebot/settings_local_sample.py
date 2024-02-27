@@ -1,3 +1,5 @@
+import logging
+import base64
 
 DATABASES = {
     'default': {
@@ -15,6 +17,14 @@ DEBUG = True
 
 SECRET_URL_WAY = "mysecretway"
 
-ALLOWED_HOSTS = [
+FIELD_ENCRYPTION_KEY = base64.urlsafe_b64encode(
+    b"e0bc309cf0f362d87beb39451cd83321"
+)
 
+ALLOWED_HOSTS_REGEX = [
+    r"0\.0\.0\.0",
+    r"127\.0\.0\.1",
+    r'^[a-f0-9]{32}\.serveo\.net$',
 ]
+
+LOG_LEVEL = logging.DEBUG
