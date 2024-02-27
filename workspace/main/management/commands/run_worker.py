@@ -3,6 +3,7 @@ from importlib import import_module
 from cashier.workers import (
     tron_transaction_checker,
     invoice_expire_checker,
+    invoice_confirm_checker,
 )
 
 class Command(BaseCommand):

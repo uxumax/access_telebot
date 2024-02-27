@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand, CommandError
-from messenger.routers import CallbackInlineRouter, Callback
+from messenger.routers import build_callback_inline_reply 
 import main.models
 
 
@@ -28,16 +28,12 @@ class Command(BaseCommand):
         if _args_line is not None:
             args = self._split_args(_args_line)
         
-        callback = Callback(
-            id=1,
+        build_callback_inline_reply(
+            customer,
             app_name=app_name,
             reply_name=reply_name,
             args=args,
         )
-
-        CallbackInlineRouter(
-            customer, callback
-        ).route()
 
         print("Callback Reply has been called")
 

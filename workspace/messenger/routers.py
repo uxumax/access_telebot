@@ -332,3 +332,22 @@ def route_callback_inline(
     return CallbackInlineRouter(
         customer, callback
     ).route()
+
+
+def build_callback_inline_reply(
+    customer: main.models.Customer,
+    app_name: str,
+    reply_name: str, 
+    args: typing.Optional[list] = None
+):
+    callback = Callback(
+        id=1,
+        app_name=app_name,
+        reply_name=reply_name,
+        args=args,
+    )
+
+    return CallbackInlineRouter(
+        customer, callback
+    ).route()
+

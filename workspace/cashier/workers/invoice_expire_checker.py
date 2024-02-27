@@ -14,7 +14,7 @@ class InvoiceExpireCheckWorker:
     def start_loop(self, interval=60 * 1):
         while True:
             self._delete_expired_building_invoices()
-            self._set_expired_paying_invoices()
+            self._set_expired_paying_crypto_invoices()
             sleep(interval)
 
     @staticmethod
@@ -27,7 +27,7 @@ class InvoiceExpireCheckWorker:
             log.info(f"Deleted {deleted_count} expired building invoices.")
 
     @staticmethod
-    def _set_expired_paying_invoices():
+    def _set_expired_paying_crypto_invoices():
         # Возвращает количество обновленных записей
         updated_count = CryptoInvoice.objects.filter(
             status="PAYING",
