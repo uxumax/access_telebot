@@ -1,72 +1,21 @@
 # Created by https://www.gitignore.io
 
-### OSX ###
-.DS_Store
-.AppleDouble
-.LSOverride
-
-# Icon must end with two \r
-Icon
-
 
 # Thumbnails
 ._*
 
-# Files that might appear on external disk
-.Spotlight-V100
-.Trashes
 
-# Directories potentially created on remote AFP share
-.AppleDB
-.AppleDesktop
-Network Trash Folder
-Temporary Items
-.apdisk
-
-
-### Python ###
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 
-# C extensions
-*.so
 
 # Distribution / packaging
 .Python
 env/
-build/
-develop-eggs/
-dist/
 downloads/
 import/
-eggs/
-lib/
-lib64/
-parts/
-sdist/
 var/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
-
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.coverage
-.cache
-nosetests.xml
-coverage.xml
 
 # Translations
 *.mo
@@ -83,19 +32,13 @@ target/
 *.log
 *.pot
 *.pyc
+migrations/
 
 ### VIM ###
 *.swp
 
+### Access telebot ###
 logs/
-__pycache__/
-migrations/
 settings_local.py
 media/
 
-
-uwsgi.sock
-uwsgi.pid
-celery.pid
-celerybeat-schedule.db
-tgsettings.py
