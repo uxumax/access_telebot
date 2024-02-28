@@ -1,5 +1,8 @@
 from django.core.management.base import BaseCommand, CommandError
 from importlib import import_module
+from main.workers import (
+    webhook_tunneler,
+)
 from cashier.workers import (
     tron_transaction_checker,
     invoice_expire_checker,

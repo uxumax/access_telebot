@@ -2,7 +2,7 @@ from access_telebot.logger import get_logger
 from access_telebot.serveo_tunnel_maker import ServeoTunnelMaker
 import typing
 
-import main.models
+from main import models
 from main.workers import core
 import requests
 import telebot
@@ -21,12 +21,12 @@ class TelegramWebhooker:
     
     @staticmethod
     def get_current_webhook_url() -> typing.Union['str', None]:
-        webhook = main.models.TelegramWebhook.load()
+        webhook = models.TelegramWebhook.load()
         return webhook.url
 
     @staticmethod
     def _save_new_webhook(new_pid: int, new_url: str):
-        webhook = main.models.TelegramWebhook.load()
+        webhook = models.TelegramWebhook.load()
         webhook.url = new_url
         webhook.pid = new_pid
         webhook.save()
@@ -103,6 +103,9 @@ class WebhookUrlIsNotWorkingException(Exception):
 
 
 class Worker(core.Worker):
+    stat = models.WebhookTunnelerWorkerStat
+    beat_interval = 10
+
     log = get_logger(__name__)
     webhooker = TelegramWebhooker
 
@@ -112,12 +115,15 @@ class Worker(core.Worker):
         bot.set_webhook(url=webhook_url)        
 
         while not self.stop_event.is_set():
-            try:
-                self._check_webhook_url(webhook_url)
-            except WebhookUrlIsNotWorkingException:
-                return self.start()
+            self._beat(webhook_url)
+            self.wait()
 
-            sleep(10)
+    def _beat(self, webhook_url: str):
+        try:
+            self._check_webhook_url(webhook_url)
+        except WebhookUrlIsNotWorkingException:
+            return self.start()
+
     
     def _check_webhook_url(self, webhook_url):
         if self.webhooker.is_webhook_working(webhook_url):

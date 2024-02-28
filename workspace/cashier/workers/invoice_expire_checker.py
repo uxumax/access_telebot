@@ -6,16 +6,20 @@ from access_telebot.logger import get_logger
 from cashier.models import (
     BuildingInvoice,
     CryptoInvoice,
+    InvoiceExpireCheckerWorkerStat
 )
 
 log = get_logger(__name__)
 
 
 class Worker(core.Worker):
-    def start(self, interval=60 * 1):
+    beat_interval = 60 * 1 
+    stat = InvoiceExpireCheckerWorkerStat
+
+    def start(self):
         while not self.stop_event.is_set():
             self._beat()
-            self.stop_event.wait(interval)
+            self.wait()
 
     def _beat(self):
         self._delete_expired_building_invoices()

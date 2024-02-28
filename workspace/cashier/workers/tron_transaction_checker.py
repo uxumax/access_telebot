@@ -5,7 +5,7 @@ from time import sleep
 
 from main.workers import core
 from access_telebot.logger import get_logger
-import cashier.models
+from cashier import models
 import cashier.types
 
 from django.conf import settings
@@ -102,7 +102,7 @@ class TronTransactionsGetter:
 class InvoiceTransactionChecker:
     def __init__(
         self, 
-        invoice: cashier.models.CryptoInvoice, 
+        invoice: models.CryptoInvoice, 
         last_transactions: typing.List[
             cashier.types.DecodedTransaction
         ],
@@ -142,7 +142,7 @@ class InvoiceTransactionChecker:
         return None
 
     def _update_transaction_model(self):
-        cashier.models.CryptoTransaction.objects.update_or_create(
+        models.CryptoTransaction.objects.update_or_create(
             invoice=self.invoice,
             txid=self.invoice_tx["txid"],
             defaults={
@@ -153,10 +153,13 @@ class InvoiceTransactionChecker:
 
 
 class Worker(core.Worker):
-    def start(self, interval=60 * 3):
+    beat_interval = 60 * 1
+    stat = models.TronTransactionCheckerWorkerStat
+
+    def start(self):
         while not self.stop_event.is_set():
             self._beat()
-            self.stop_event.wait(interval)
+            self.wait()
 
     def _beat(self):
         invoices = self._get_new_invoices()
@@ -202,7 +205,7 @@ class Worker(core.Worker):
     
     @staticmethod
     def _get_new_invoices():
-        return cashier.models.CryptoInvoice.objects.filter(
+        return models.CryptoInvoice.objects.filter(
             status="PAYING"
         ).all()
 

@@ -14,11 +14,13 @@ log = get_logger(__name__)
 
 
 class Worker(core.Worker):
+    beat_interval = 60 * 5 
+    stat = models.CustomerAccessRevokerWorkerStat
 
-    def start(self, interval=60 * 60 * 1):
+    def start(self):
         while not self.stop_event.is_set():
             self._beat()
-            self.stop_event.wait(interval)
+            self.wait()
 
     def _beat(self):
         for access in self._get_all_expired_accesses():

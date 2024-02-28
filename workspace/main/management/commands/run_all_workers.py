@@ -1,36 +1,27 @@
-from django.core.management.base import BaseCommand, CommandError
-from threading import Thread
-import signal
+import logging
+from django.core.management.base import BaseCommand
+from django.utils import timezone
+from threading import Thread, Timer, Event
+import time
 import sys
+import signal
 
-from main.workers import (
-    webhook_tunneler,
-)
-from cashier.workers import (
-    tron_transaction_checker,
-    invoice_expire_checker,
-    invoice_confirm_checker,
-)
-from accesser.workers import (
-    customer_access_revoker,
+from main.workers import webhook_tunneler
+from cashier.workers import tron_transaction_checker, invoice_expire_checker, invoice_confirm_checker
+from accesser.workers import customer_access_revoker
+
+stop_event = Event()
+logging.basicConfig(
+    level=logging.ERROR, 
+    format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
 
 class Command(BaseCommand):
-    help = 'Run all workers in several threads'
+    help = 'Run all workers in several threads and monitor their last beat'
 
-    def sigint_handler(self, signal, frame):
-        self.stdout.write(
-            self.style.WARNING(
-                'Interrupt signal received. Shutting down...'
-            )
-        )
-        for worker in self.workers:
-            worker.stop()
-        for thread in self.threads:
-            thread.join()
-
-    def handle(self, *args, **options):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.workers = [
             webhook_tunneler.Worker(),
             tron_transaction_checker.Worker(),
@@ -40,15 +31,18 @@ class Command(BaseCommand):
         ]
         self.threads = []
 
-        signal.signal(signal.SIGINT, self.sigint_handler)
+
+    def handle(self, *args, **options):
+        signal.signal(signal.SIGINT, self._sigint_handler)
 
         for worker in self.workers:
             print("Worker", worker, "started")
             thread = Thread(
-                target=worker.start
+                target=lambda: self.start_worker_with_error_logging(worker)
             )
             thread.start()
             self.threads.append(thread)
+
 
         self.stdout.write(
             self.style.SUCCESS(
@@ -56,11 +50,24 @@ class Command(BaseCommand):
             )
         )
 
-        for thread in self.threads:
-            thread.join()
+        stop_event.wait()  # Ожидание сигнала остановки
 
-        self.stdout.write(
-            self.style.SUCCESS(
-                'All workers have been stopped.'
-            )
-        )
+    def _sigint_handler(self, signum, frame):
+        self.stdout.write(self.style.WARNING('Interrupt signal received. Shutting down...'))
+        stop_event.set()  # Установка события остановки для остановки всех потоков
+
+        for worker in self.workers:
+            worker.stop()  # Убедитесь, что у ваших воркеров есть метод stop()
+
+        for thread in self.threads:
+            if thread.is_alive():
+                thread.join()  # Ожидание завершения работы потока
+
+        self.stdout.write(self.style.SUCCESS('All workers have been stopped.'))
+
+
+    def start_worker_with_error_logging(self, worker):
+        try:
+            worker.start()
+        except Exception as e:
+            logging.exception("Error in worker {type(worker).__name__}: {e}", exc_info=True)

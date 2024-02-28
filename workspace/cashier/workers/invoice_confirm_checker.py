@@ -6,16 +6,20 @@ from access_telebot.logger import get_logger
 from messenger.routers import build_callback_inline_reply
 from cashier.models import (
     CryptoInvoice,
+    InvoiceConfirmCheckerWorkerStat,
 )
 
 log = get_logger(__name__)
 
 
 class Worker(core.Worker):
+    beat_interval = 60 * 1
+    stat = InvoiceConfirmCheckerWorkerStat
+
     def start(self, interval=60 * 1):
         while not self.stop_event.is_set():
             self._beat()
-            self.stop_event.wait(interval)
+            self.wait()
 
     def _beat(self):
         for invoice in self._get_confirmed_crypto_invoices():

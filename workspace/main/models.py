@@ -88,11 +88,15 @@ class Customer(CustomerBase):
     def __str__(self):
         return self.username or self.first_name
 
-#     def update_last_callback_inline_date(self):
-#         self.last_callback_inline_date = timezone.now()
-#         self.save()
+
+class WorkerStatAbstract(SingletonModel):
+    last_beat_date = models.DateTimeField(
+        default=timezone.make_aware(timezone.datetime(1970, 1, 1))
+    )
+
+    class Meta:
+        abstract = True
 
 
-
-
-
+class WebhookTunnelerWorkerStat(WorkerStatAbstract):
+    """Worker stat model"""

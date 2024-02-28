@@ -44,6 +44,18 @@ class CurrencyTypeChoices(models.TextChoices):
     CRYPTO = "CRYPTO", "CRYPTO"
 
 
+class InvoiceConfirmCheckerWorkerStat(main.models.WorkerStatAbstract):
+    """Worker stat model"""
+
+
+class InvoiceExpireCheckerWorkerStat(main.models.WorkerStatAbstract):
+    """Worker stat model"""
+
+
+class TronTransactionCheckerWorkerStat(main.models.WorkerStatAbstract):
+    """Worker stat model"""
+
+
 class TempModelAbstract(models.Model):
     create_date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(auto_now=True)
