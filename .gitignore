@@ -84,6 +84,9 @@ target/
 *.pot
 *.pyc
 
+### VIM ###
+*.swp
+
 logs/
 __pycache__/
 migrations/
