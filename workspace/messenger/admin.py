@@ -49,3 +49,11 @@ class CommandReplyAdmin(admin.ModelAdmin):
     fields = ('command', 'text')
 
     inlines = [InlineButtonInline]
+
+
+@admin.register(models.Translation) 
+class TranslationAdmin(admin.ModelAdmin):
+    list_display = ('name', 'from_text', 'to_text')  
+    search_fields = ('name', 'from_text', 'to_text')
+    list_filter = ('name',)
+

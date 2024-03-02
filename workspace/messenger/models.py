@@ -83,3 +83,16 @@ class ShowedInlineButton(models.Model):
 
 
 
+class Translation(models.Model):
+    name = models.CharField(max_length=255)
+    from_text = models.TextField(
+        unique=True,
+        max_length=4096,
+    )  # 4096 is maximum length of telegram msg
+    to_text = models.TextField(
+        null=True,
+        max_length=4096,
+    )
+
+    def __str__(self):
+        return f"{self.id}:{self.name}:{self.from_text[:10]}"

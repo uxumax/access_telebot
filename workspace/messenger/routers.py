@@ -277,6 +277,7 @@ class CommandRouter(CommandRouterBase):
         if self.reply_name is None:
             reply = self._get_reply()
         else:
+            import main.replies
             reply = getattr(main.replies, self.reply_name) 
         return reply(self.customer).build()
         
@@ -351,3 +352,11 @@ def build_callback_inline_reply(
         customer, callback
     ).route()
 
+def build_command_reply(
+    customer: main.models.Customer,
+    reply_name: str, 
+):
+    return CommandRouter(
+        customer=customer,
+        reply_name=reply_name
+    ).route()

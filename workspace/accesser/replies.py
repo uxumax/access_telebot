@@ -12,6 +12,7 @@ from . import models
 
 from messenger.replies import (
     CallbackInlineReplyBuilder,
+    translate as _
 )
 
         
@@ -30,7 +31,7 @@ CallbackInlineReply = typing.Union[
 
 class AllSubsReply(CallbackInlineReplyBuilder):
     def build(self):
-        text = (
+        text = _(
             "Our plans: "
         )
 
@@ -60,7 +61,7 @@ class MySubsReply(CallbackInlineReplyBuilder):
         if self.customer_chat_accesses:
             text = self._get_text()
         else:
-            text = (
+            text = _(
                 "Sorry, you don't have active plan right now"
             )
 
@@ -76,15 +77,25 @@ class MySubsReply(CallbackInlineReplyBuilder):
         return None  # self.markup
  
     def _get_text(self):
-        text = (
-            "You have these subscriptions: \n"
-            f"{self._get_subscription_list_text()}"
-            "\n"
+        text = _(
+            (
+                "You have these subscriptions: \n"
+                "{{subs_list}}"
+                "\n"
+            ),
+            {
+                "subs_list": self._get_subscription_list_text()
+            }
         )
-        text += (
-            "You have access to chat/channels: \n"
-            f"{self._get_customer_access_chat_list_text()}"
-            "\n"            
+        text += _(
+            (
+                "You have access to chat/channels: \n"
+                f"{{access_list}}"
+                "\n"            
+            ),
+            {
+                "access_list": self._get_customer_access_chat_list_text()
+            }
         )
         return text
 
@@ -126,7 +137,9 @@ class GiveInviteLinksReply(CallbackInlineReplyBuilder):
         invoice = self._get_invoice()
         if invoice.status != "CONFIRMED":
             self.send_message(
-               "Cannot give give keys coz connot find your confirmed invoice"       
+                _(
+                   "Cannot give give keys coz connot find your confirmed invoice"       
+                )
             )
 
         customer_chat_accesses = self._assign_subscription_access(
@@ -137,9 +150,14 @@ class GiveInviteLinksReply(CallbackInlineReplyBuilder):
         invite_links = self._get_invite_links(customer_chat_accesses)
         invite_links_text = self._get_invite_links_text(invite_links)
         self.send_message(
-            text=(
-                "Here are your invite links:\n"
-                f"{invite_links_text}",
+            text=_(
+                (
+                    "Here are your invite links:\n"
+                    "{{link_list}}"
+                ),
+                {
+                    "link_list": invite_links_text
+                }
             )
         )
 
@@ -147,7 +165,12 @@ class GiveInviteLinksReply(CallbackInlineReplyBuilder):
             timezone.now() + invoice.duration.duration
         ).strftime("%B %d, %Y %H:%M")
         self.send_message(
-            f"All invite links will be valid until {valid_until_date}"
+            _(
+                ("All invite links will be valid until {{date}}"),
+                {
+                    "date": valid_until_date
+                }
+            )
         )
 
         invoice.status = "REDEEMED"
@@ -179,7 +202,7 @@ class GiveInviteLinksReply(CallbackInlineReplyBuilder):
             )
         except cashier.models.CryptoInvoice.DoesNotExist:
             self.send_message(
-                "Cannot find your invoice"
+                _("Cannot find your invoice")
             )
             raise Exception(
                 f"Cannot find confirmed invoice with id {invoice_id}"
@@ -273,8 +296,15 @@ class RevokeAccessNotificationReply(CallbackInlineReplyBuilder):
         )
 
         self.send_message(
-            "Your access to these channels has been revoked:\n"
-            f"{revoked_chats_list_text}",
+            _(
+                (
+                    "Your access to these channels has been revoked:\n"
+                    "{{chat_list}}",
+                ),
+                {
+                    "chat_list": revoked_chats_list_text
+                }
+            ),
             reply_markup=self._build_markup(revoked_access)
         )
 
@@ -304,7 +334,7 @@ class RevokeAccessNotificationReply(CallbackInlineReplyBuilder):
     ):
         if revoked_access.subscription is not None:
             self.add_button(
-                "Buy access again",
+                _("Buy access again"),
                 app_name="cashier",
                 reply_name="ChooseAccessDurationReply",
                 args=revoked_access.subscription.id

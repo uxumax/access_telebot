@@ -5,12 +5,12 @@ from telebot import TeleBot
 from messenger.replies import (
     Callback,
     CallbackInlineReplyBuilder,
+    translate as _
 )
 from . import wallets
+from . import models
 import main.models
 import accesser.models
-import cashier.models
-from . import models
 
 from .wallets.crypto import tron as tron_wallet
 
@@ -51,15 +51,17 @@ class ChooseAccessDurationReply(BuildingInvoiceReplyBuilder):
         )
         self._update_invoice(subscription)
 
-        if self._is_only_one_duration():
+        if self.invoice.has_one_duration_only():
             duration = subscription.durations.first()
             return self.router.redirect(
                 "ChoosePayMethodReply",
                 args=duration.id
             )
 
-        text = (
-            f"Choose access period for subscription {subscription.name}"
+        text = _(
+            "Choose access period for subscription {{subscription}}",
+        ).context(
+            subscription=subscription.name
         )
         self.send_message(
             text,
@@ -73,15 +75,16 @@ class ChooseAccessDurationReply(BuildingInvoiceReplyBuilder):
         self.invoice.subscription = subscription
         self.invoice.save()
 
-    def _is_only_one_duration(self):
-        return self.invoice.subscription.durations.count() == 1
-    
     def _build_markup(self):
         durations = self.subscription.durations.all()
         for duration in durations:
             self.add_button(
-                f"{duration.duration} days - {duration.price} USDT", 
-                # app_name="cashier",
+                _(
+                    "{{duration}} days - {{price}} USDT", 
+                ).context(
+                    duration=duration.duration,
+                    price=duration.price,
+                ),
                 reply_name="ChoosePayMethodReply",
                 args=duration.id
             )
@@ -101,8 +104,10 @@ class ChoosePayMethodReply(BuildingInvoiceReplyBuilder):
         duration = self._get_duration_model()
         self._update_invoice(duration)
 
-        text = (
-            f"Amount for pay {duration.price} USD. Choose payment method"
+        text = _(
+            "Amount for pay {{amount}} USD. Choose payment method",
+        ).context(
+            amount=duration.price
         )
         self.send_message(
             text,
@@ -133,11 +138,15 @@ class ChoosePayMethodReply(BuildingInvoiceReplyBuilder):
                 reply_name="CheckoutReply",
                 args=slug
             )
-
+        if not self.invoice.has_one_duration_only():
+            self.add_button(
+                _("Back"),
+                reply_name="ChooseAccessDurationReply",
+                args=self.invoice.subscription.id           
+            )
         self.add_button(
-            "Back",
-            reply_name="ChooseAccessDurationReply",
-            args=self.invoice.subscription.id           
+            _("Cancel"),
+            reply_name="CryptoPayCancelReply"
         )
         return self.markup
 
@@ -172,24 +181,30 @@ class CheckoutReply(BuildingInvoiceReplyBuilder):
 
     def _get_invoice_text(self):
         i = self.invoice
-        text = (
-            "Check you summary invoice data\n"
-            f"Subscription: {i.subscription.name}\n"
-            f"Duration: {i.duration.duration}\n"
+        text = _(
+            "Check invoice total\n"
+            "Subscription: {{subscription}}\n"
+            "Duration: {{duration}}"
+        ).context(
+            subscription=i.subscription.name,
+            duration=i.duration.duration
         )
-
         if i.currency_type == "CRYPTO":
-            text += (
-                f"Amount: {i.amount} {i.currency}\n"
-                f"Network: {i.network}\n"
+            text += "\n"  # Translator remove all sides space and new line simbols
+            text += _(
+                "Amount: {{amount}} {{currency}}\n"
+                "Network: {{network}}\n"
+            ).context(
+                amount=i.amount,
+                currency=i.currency,
+                network=i.network
             )
-            
         return text 
 
     def _build_markup(self):
         if self.invoice.currency_type == "CRYPTO":
             self.add_button(
-                "Pay",
+                _("Pay"),
                 reply_name="CryptoPayingReply"
             )
         elif self.invoice.currency_type == "FIAT":
@@ -199,7 +214,7 @@ class CheckoutReply(BuildingInvoiceReplyBuilder):
                 "Unsupported invoice currency type"
             )
         self.add_button(
-            "Back",
+            _("Back"),
             reply_name="ChoosePayMethodReply",
             args=self.invoice.duration.id           
         )
@@ -211,26 +226,33 @@ class CryptoPayingReply(BuildingInvoiceReplyBuilder):
     def build(self):
         invoice = self._deploy_invoice()
         self.send_message(
-            (
-                f"We have been reserved for you {invoice.network} address "
-                f"for {invoice.PAYING_TIMEOUT} minutes. "
-                f"Please send funds during this time."
+            _(
+                "We have been reserved for you {{network}} address "
+                "for {{timeout}} minutes. "
+                "Please send funds during this time."
+            ).context(
+                network=invoice.network,
+                timeout=invoice.PAYING_TIMEOUT
             )
         )
         self.send_message(
-            (
-                f"Please send {invoice.currency} to this address "
-                "and exactly this amount:"
-            ),
+            _(
+                "Please send {{currency}} to this address:"
+            ).context(
+                currency=invoice.currency
+            )
         )
         self.send_message(
             f"{invoice.address}"
         )
         self.send_message(
+            _("Please send this amount exactly:")
+        )
+        self.send_message(
             f"{invoice.amount}"
         )
         self.send_message(
-            "Please push Paid when you done",
+            _("Please push Paid when you done"),
             reply_markup=self._build_markup()
         )
 
@@ -248,12 +270,12 @@ class CryptoPayingReply(BuildingInvoiceReplyBuilder):
 
     def _build_markup(self):
         self.add_button(
-            "Paid",
+            _("Paid"),
             reply_name="CryptoPayResultReply",
             args="PAID"            
         )
         self.add_button(
-            "Cancel",
+            _("Cancel"),
             reply_name="CryptoPayResultReply",
             args="CANCEL"
         )
@@ -276,7 +298,7 @@ class CryptoInvoicePayingReplyBulder(CallbackInlineReplyBuilder):
 
     def out_of_route(self):
         self.send_message(
-            "You don't have current active invoice right now"
+            _("You don't have current active invoice right now")
         )
 
         def build_replacement():
@@ -319,7 +341,7 @@ class CryptoPayCancelReply(CryptoInvoicePayingReplyBulder):
         self.customer.invoice.canceled()
 
         self.send_message(
-            "Payment has been canceled"
+            _("Payment has been canceled")
         )
 
         return self.router.redirect(
@@ -334,7 +356,7 @@ class CryptoPayDoneReply(CryptoInvoicePayingReplyBulder):
         self._update_invoice()
 
         text = (
-            "Thanks. We are checking your transaction now. "
+            _("Thanks. We are checking your transaction now. ")
         )
 
         self.send_message(
@@ -348,11 +370,11 @@ class CryptoPayDoneReply(CryptoInvoicePayingReplyBulder):
     
     def _build_markup(self):
         self.add_button(
-            "Check status now",
+            _("Check status now"),
             reply_name="CryptoTranzCheckReply"
         )
         self.add_button(
-            "Notify me when confirmed",
+            _("Notify me when confirmed"),
             reply_name="NotifyWhenTranzConfirmedReply"
         )
         return self.markup
@@ -363,7 +385,7 @@ class CryptoTranzCheckReply(CryptoInvoicePayingReplyBulder):
         tranzes = self.invoice.transactions.all()
         if tranzes.count() == 0:
             return self.send_message(
-                "Waiting for transaction. Still have not seen.",
+                _("Waiting for transaction. Still have not seen."),
                 reply_markup=self._build_markup()
             )
 
@@ -376,7 +398,7 @@ class CryptoTranzCheckReply(CryptoInvoicePayingReplyBulder):
         if tranz.is_confirmed():
             self.invoice.confirmed()
             self.send_message(
-                "Your transaction has been confirmed"
+                _("Your transaction has been confirmed")
             )
             return self.router.redirect(
                 app_name="accesser",
@@ -388,11 +410,16 @@ class CryptoTranzCheckReply(CryptoInvoicePayingReplyBulder):
             )
         else:
             self.send_message(
-                (
-                    f"We are hav been seen your transaction txid: {tranz.txid}\n\n"
+                _(
+                    "We are hav been seen your transaction "
+                    "txid: {{txid}}\n\n"
                     "Confirmations\n"
-                    f"Now: {tranz.current_confirmations} \n"  # Сейчас
-                    f"Required: {tranz.required_confirmations}"  # Ожидается
+                    "Now: {{current_confirmations}} \n"  # Сейчас
+                    "Required: {{required_confirmations}}"  # Ожидается
+                ).context(
+                    txid=tranz.txid,
+                    current_confirmations=tranz.current_confirmations,
+                    required_confirmations=tranz.required_confirmations
                 ),
                 reply_markup=self._build_markup()
             )
@@ -400,11 +427,11 @@ class CryptoTranzCheckReply(CryptoInvoicePayingReplyBulder):
 
     def _build_markup(self):
         self.add_button(
-            "Check confirmations now",
+            _("Check confirmations now"),
             reply_name="CryptoTranzCheckReply"
         )
         self.add_button(
-            "Notify me when confirmed",
+            _("Notify me when confirmed"),
             reply_name="NotifyWhenTranzConfirmedReply"
         )
         return self.markup
@@ -413,7 +440,9 @@ class CryptoTranzCheckReply(CryptoInvoicePayingReplyBulder):
 class NotifyWhenTranzConfirmedReply(CryptoInvoicePayingReplyBulder):
     def build(self):
         self.send_message(
-            "Sure! We will notify you when transaction be confirmed "
-            "and will send you invite link"
+            _(
+                "Sure! We will notify you when transaction be confirmed "
+                "and will send you invite link"
+            )
         )
         # Notifications sends automatically by messenger worker

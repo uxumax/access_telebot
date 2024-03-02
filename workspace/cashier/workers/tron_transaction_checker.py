@@ -173,7 +173,7 @@ class Worker(core.Worker):
             transactions = TronTransactionsGetter.get_all(invoice.address)
             log.debug(
                 f"Got {len(transactions)} tron transactions from API "
-                "for check invoice {invoice} payment"
+                f"for check invoice {invoice} payment"
             )
             
             checker = InvoiceTransactionChecker(
@@ -206,7 +206,7 @@ class Worker(core.Worker):
     @staticmethod
     def _get_new_invoices():
         return models.CryptoInvoice.objects.filter(
-            status="PAYING"
+            status__in=["PAYING", "PAID"]
         ).all()
 
 

@@ -1,0 +1,124 @@
+from django.core.management.base import BaseCommand, CommandError
+import typing
+from django.db import transaction
+from django.db.utils import IntegrityError
+from messenger.models import Translation
+from subprocess import Popen, PIPE
+import os
+import re
+
+
+class Command(BaseCommand):
+    help = 'Create new messages translation'
+    
+    def add_arguments(self, parser):
+        parser.add_argument(
+            'translation_name',
+            type=str, 
+            help='Name for translation'
+        )
+    
+    def handle(self, *args, **options):
+        self.translation_name = options["translation_name"]
+
+        # dbg lines 
+        Translation.objects.all().delete()
+
+        with transaction.atomic():
+            texts: list = self._parse_all_text_for_translate()
+            print("Making empty translations...")
+            self._create_translations(texts)
+
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Translation {self.translation_name} has been made" 
+            )
+        )
+
+    def _create_translations(self, texts: typing.List[str]): 
+        for text in texts:
+            print(text)
+            self._create_empty_translation(text)
+
+    def _create_empty_translation(self, text: str):
+        try:
+            Translation.objects.create(
+                name=self.translation_name,
+                from_text=text,
+            )
+        except IntegrityError as error:
+            raise CommandError(
+                f"{error}\n"
+                "Check admin messenger.Translations"
+            )
+                                
+    def _parse_all_text_for_translate(self) -> typing.List[str]:
+        collected_strings = []
+        for dirpath, filename in self._get_filenames():
+            file_path = os.path.join(dirpath, filename)
+            strings = self._parse_file(file_path)
+            collected_strings.extend(strings)
+        # Удаление дубликатов
+        unique_msgids = list(set(collected_strings))
+        return unique_msgids
+
+    def _get_filenames(self) -> typing.List[str]:
+        files = []
+        for dirpath, dirnames, filenames in os.walk('.'):
+            for filename in filenames:
+                if filename.endswith('.py'):
+                    files.append(
+                        (dirpath, filename)
+                    )
+        return files
+
+    def _parse_file(self, file_path: str):
+        process = Popen(
+            [
+                "xgettext", 
+                "--language=Python", 
+                "--keyword=_:1,2",
+                "--from-code=UTF-8", 
+                "-o-", 
+                file_path,
+            ], 
+            stdout=PIPE
+        )
+        output, errors = process.communicate()
+        if errors:
+            self.stdout.write(errors.decode('utf-8'), self.style.ERROR)
+        msgstr_list = self._parse_msgstr(output)
+        return msgstr_list
+
+    @classmethod
+    def _parse_msgstr(cls, output) -> typing.List[str]:
+        parsed_list = []
+        if output:
+            blocks = re.findall(
+                r'msgid\s+((?:".*?"\n?)+)(?=msgstr|\Z)', 
+                output.decode('utf-8'), 
+                re.DOTALL
+            )
+            for block in blocks:
+                msgstr = cls._clear_msgstr(block)
+                if msgstr:
+                    parsed_list.append(msgstr)
+
+        return parsed_list
+    
+    @staticmethod
+    def _clear_msgstr(msgstr: str) -> str:
+        # Remove leading and trailing quotes
+        msgstr = re.sub(r'(?<!\\)"', '', msgstr)
+        
+        # Remove leading and trailing whitespace
+        msgstr = msgstr.strip()
+        
+        # Replace multiple spaces with a single space
+        msgstr = re.sub(r'\s+', ' ', msgstr)
+        
+        # Normalize line endings to Unix-style (LF) for consistency across different platforms
+        msgstr = msgstr.replace("\r\n", "\n").replace("\r", "\n")
+        
+        return msgstr
+

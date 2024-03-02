@@ -1,20 +1,18 @@
+import typing
 from telebot import TeleBot
 from telebot.types import (
     InlineKeyboardMarkup,
     InlineKeyboardButton
 )
-
-import typing
-
-from messenger.replies import CommandReplyBuilder
+from messenger.replies import (
+    CommandReplyBuilder,
+    translate as _,
+)
 from messenger.routers import Callback
-
 from access_telebot.settings import TELEBOT_KEY
 
 
 bot = TeleBot(TELEBOT_KEY)
-
-
 CommandReply = typing.Union[
     'StartCommandReply',
 ]
@@ -22,10 +20,11 @@ CommandReply = typing.Union[
 
 class StartCommandReply(CommandReplyBuilder):
     def build(self):
-        text = (
-            "Hi. I am your accessbot"
-        )
-       
+        text = _(
+            "Hi. I am accessbot. "
+            "I can provide access to some private telegram channels. "
+            "Check Plans below for more info. "
+        )       
         self.send_message(
             text,
             reply_markup=self._build_markup()
@@ -33,29 +32,14 @@ class StartCommandReply(CommandReplyBuilder):
 
     def _build_markup(self):
         self.add_button(
-            "Plans",
+            _("Plans"),
             app_name="accesser",
             reply_name="AllSubsReply"
         )
-
+        self.add_button(
+            _("My plan"),
+            app_name="accesser",
+            reply_name="MySubsReply"
+        )
         return self.markup
 
-        # markup.add(
-        #     InlineKeyboardButton(
-        #         "Plans", callback_data="accesser:AllSubsReply"
-        #     )
-        # )
-        
-        # markup.add(
-        #     InlineKeyboardButton(
-        #         "My plan", callback_data="accesser:MySubsReply"
-        #         )
-        #     )
-        
-        # markup.add(
-        #     InlineKeyboardButton(
-        #         "Contact", callback_data="raw_contact"
-        #     )
-        # )
-
-        return markup
