@@ -38,7 +38,20 @@ class Text:
             Context(kwargs)
         )
         return self
-        
+    
+    # Text + Text concat ability
+    def __add__(
+        self, 
+        other: typing.Union[
+            'Text', str
+        ]
+    ) -> 'Text':
+        if isinstance(other, Text):
+            return Text(self.text + other.text)
+        elif isinstance(other, str):
+            return Text(self.text + other)
+        return NotImplemented
+
 
 class Translator:
     def __init__(self, translation_name: str):
@@ -144,7 +157,7 @@ class ReplyBuilder:
         models.ShowedInlineButton.objects.update_or_create(
             callback_data=callback,
             defaults={
-                "caption": caption
+                "caption": caption_display, 
             }
         )
 

@@ -190,7 +190,7 @@ class CheckoutReply(BuildingInvoiceReplyBuilder):
             duration=i.duration.duration
         )
         if i.currency_type == "CRYPTO":
-            text += "\n"  # Translator remove all sides space and new line simbols
+            text += "\n"  
             text += _(
                 "Amount: {{amount}} {{currency}}\n"
                 "Network: {{network}}\n"
@@ -355,8 +355,8 @@ class CryptoPayDoneReply(CryptoInvoicePayingReplyBulder):
     def build(self):
         self._update_invoice()
 
-        text = (
-            _("Thanks. We are checking your transaction now. ")
+        text = _(
+            "Thanks. We are checking your transaction now. "
         )
 
         self.send_message(
@@ -390,7 +390,7 @@ class CryptoTranzCheckReply(CryptoInvoicePayingReplyBulder):
             )
 
         if tranzes.count() > 1:
-            # TODO
+            # @todo
             # Notify project admin/manager about this
             pass
 

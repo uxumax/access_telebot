@@ -17,12 +17,19 @@ class Command(BaseCommand):
             type=str, 
             help='Name for translation'
         )
-    
+        parser.add_argument(
+            '--delete-old-translation',  # Use double dashes for optional arguments
+            action='store_true',  # This means if the flag is specified, the value is True, otherwise False
+            help='Remove old translation with the same name before creating a new one',
+            dest='delete_old_transaltion',  # Corrected the destination variable name to match your code usage
+        )   
+
     def handle(self, *args, **options):
         self.translation_name = options["translation_name"]
+        delete_old_transaltion = options["delete_old_transaltion"]
 
-        # dbg lines 
-        Translation.objects.all().delete()
+        if delete_old_transaltion:
+            self._delete_old_translation_with_same_name()
 
         with transaction.atomic():
             texts: list = self._parse_all_text_for_translate()
@@ -35,9 +42,18 @@ class Command(BaseCommand):
             )
         )
 
+    def _delete_old_translation_with_same_name(self):
+        name = self.translation_name
+        Translation.objects.filter(
+            name=name                                                                
+        ).delete()
+        print(
+            f"Old translation with name {name} has been deleted"
+        )
+
     def _create_translations(self, texts: typing.List[str]): 
         for text in texts:
-            print(text)
+            # print(text)
             self._create_empty_translation(text)
 
     def _create_empty_translation(self, text: str):

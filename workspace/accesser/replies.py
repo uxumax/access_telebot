@@ -5,18 +5,16 @@ from access_telebot.settings import TELEBOT_KEY
 from access_telebot.logger import get_logger
 from telebot import TeleBot
 
-import main.models
+# import main.models
 import accesser.models
 import cashier.models
 from . import models
 
 from messenger.replies import (
     CallbackInlineReplyBuilder,
+    Text,
     translate as _
 )
-
-        
-
 
 
 bot = TeleBot(TELEBOT_KEY, threaded=False)
@@ -35,8 +33,7 @@ class AllSubsReply(CallbackInlineReplyBuilder):
             "Our plans: "
         )
 
-        bot.send_message(
-            self.customer.chat_id,
+        self.send_message(
             text,
             reply_markup=self._build_markup()
         )  
@@ -65,8 +62,7 @@ class MySubsReply(CallbackInlineReplyBuilder):
                 "Sorry, you don't have active plan right now"
             )
 
-        bot.send_message(
-            self.customer.chat_id,
+        self.send_message(
             text,
             reply_markup=self._build_markup()
         )  
@@ -78,42 +74,39 @@ class MySubsReply(CallbackInlineReplyBuilder):
  
     def _get_text(self):
         text = _(
-            (
-                "You have these subscriptions: \n"
-                "{{subs_list}}"
-                "\n"
-            ),
-            {
-                "subs_list": self._get_subscription_list_text()
-            }
+            "You have these subscriptions: \n"
+            "{{subs_list}}"
+        ).context(
+            subs_list=self._get_subscription_list_str()
         )
+        text += "\n\n"
         text += _(
-            (
-                "You have access to chat/channels: \n"
-                f"{{access_list}}"
-                "\n"            
-            ),
-            {
-                "access_list": self._get_customer_access_chat_list_text()
-            }
+            "You have access to chat/channels: \n"
+            "{{access_list}}"
+        ).context(
+            access_list=self._get_customer_access_chat_list_str()
         )
         return text
 
-    def _get_subscription_list_text(self):
-        text = ""
+    def _get_subscription_list_str(self) -> str:
+        text = Text("")
         for subs in self._get_subscription_list():
-            text += f"{subs.name}\n"
-        return text
+            text += _(
+                "{{subs_name}}\n"
+            ).context(
+                subs_name=subs.name
+            )
+        return text.load()
 
-    def _get_subscription_list(self):
+    def _get_subscription_list(self) -> list:
         subs_list = []
         for access in self.customer_chat_accesses:
             if access.subscription not in subs_list:
                 subs_list.append(access.subscription)
         return subs_list
 
-    def _get_customer_access_chat_list_text(self):
-        text = ""
+    def _get_customer_access_chat_list_str(self) -> str:
+        text = Text("")
         unique_chats = []
         for access in self.customer_chat_accesses:
             for chat in access.chat_group.get_all_child_chats():
@@ -122,9 +115,14 @@ class MySubsReply(CallbackInlineReplyBuilder):
                     unique_chats.append(chat)
 
         for chat in unique_chats:
-            text += f"{chat.title} до {access.end_date}\n"
+            text += _(
+                "{{chat_title}}\nUntil {{date}}\n--------\n"
+            ).context(
+                chat_title=chat.title,
+                date=access.end_date
+            )
 
-        return text  
+        return text.load() 
 
 
 class GiveInviteLinksReply(CallbackInlineReplyBuilder):
@@ -138,7 +136,7 @@ class GiveInviteLinksReply(CallbackInlineReplyBuilder):
         if invoice.status != "CONFIRMED":
             self.send_message(
                 _(
-                   "Cannot give give keys coz connot find your confirmed invoice"       
+                    "Cannot give give keys coz connot find your confirmed invoice"       
                 )
             )
 
@@ -148,16 +146,13 @@ class GiveInviteLinksReply(CallbackInlineReplyBuilder):
         )
         
         invite_links = self._get_invite_links(customer_chat_accesses)
-        invite_links_text = self._get_invite_links_text(invite_links)
+        invite_links_text = self._get_invite_links_str(invite_links)
         self.send_message(
-            text=_(
-                (
-                    "Here are your invite links:\n"
-                    "{{link_list}}"
-                ),
-                {
-                    "link_list": invite_links_text
-                }
+            _(
+                "Here are your invite links:\n"
+                "{{link_list}}"
+            ).context(
+                link_list=invite_links_text
             )
         )
 
@@ -166,15 +161,19 @@ class GiveInviteLinksReply(CallbackInlineReplyBuilder):
         ).strftime("%B %d, %Y %H:%M")
         self.send_message(
             _(
-                ("All invite links will be valid until {{date}}"),
-                {
-                    "date": valid_until_date
-                }
+                "All invite links will be valid until {{date}}"
+            ).context(
+                date=valid_until_date
             )
         )
 
         invoice.status = "REDEEMED"
         invoice.save()
+        
+        return self.router.redirect(
+            "MySubsReply"
+        )
+
 
     def _get_invoice(self):
         invoice_type_code = self._get_invoice_type_code()
@@ -269,19 +268,24 @@ class GiveInviteLinksReply(CallbackInlineReplyBuilder):
     def _get_invite_link_name(self, chat_id: int):
         time = timezone.now().timestamp()  # for uniqilize link name
         return (
-            "{self.customer.chat_id}:{chat_id}:{time}"
+            f"{self.customer.chat_id}:{chat_id}:{time}"
         )
 
-    def _get_invite_links_text(
+    def _get_invite_links_str(
         self, 
         links: typing.List[
             typing.Tuple[str, str]
         ]
-    ):
-        text = ""
+    ) -> str:
+        text = Text("")
         for chat_title, link in links:
-            text += f"-- {chat_title} - {link}\n"
-        return text
+            text += _(
+                "-- {{chat_title}} - {{link}}\n"
+            ).context(
+                chat_title=chat_title,
+                link=link
+            )
+        return text.load()
 
 
 class RevokeAccessNotificationReply(CallbackInlineReplyBuilder):
@@ -291,19 +295,16 @@ class RevokeAccessNotificationReply(CallbackInlineReplyBuilder):
 
     def build(self):
         revoked_access = self._get_revoked_access()
-        revoked_chats_list_text = self._get_revoked_chat_list_text(
+        revoked_chats_list_text = self._get_revoked_chat_list_str(
             revoked_access
         )
 
         self.send_message(
             _(
-                (
-                    "Your access to these channels has been revoked:\n"
-                    "{{chat_list}}",
-                ),
-                {
-                    "chat_list": revoked_chats_list_text
-                }
+                "Your access to these channels has been revoked:\n"
+                "{{chat_list}}",
+            ).context(
+                chat_list=revoked_chats_list_text
             ),
             reply_markup=self._build_markup(revoked_access)
         )
@@ -318,15 +319,19 @@ class RevokeAccessNotificationReply(CallbackInlineReplyBuilder):
     def _get_revoked_access_id(self):
         return self.callback.args[0]
 
-    def _get_revoked_chat_list_text(
+    def _get_revoked_chat_list_str(
         self, 
         revoked_access: models.CustomerChatAccess
-    ):
-        text = ""
+    ) -> str:
+        text = Text("")
         for chat in revoked_access.chat_group.chats.all():
-            row = f"-- {chat.title}\n"
+            row: Text = _(
+                "-- {{chat_title}}\n"
+            ).context(
+                chat_title=chat.title
+            )
             text += row
-        return row
+        return row.load()
     
     def _build_markup(
         self,
