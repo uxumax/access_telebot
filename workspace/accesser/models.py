@@ -125,16 +125,18 @@ class CustomerChatAccess(models.Model):
         return f"({self.id}:{self.customer.id}:{self.end_date})"
 
 
-def create_access_records(customer_id: int, subscription_id: int):
-    from django.utils import timezone
-    customer = main.models.Customer.objects.get(id=customer_id)
-    subscription = Subscription.objects.get(id=subscription_id)
-    access_types = subscription.access_types.all()
-    for access_type in access_types:
-        CustomerChatAccess.objects.create(
-            customer=customer,
-            start_date=timezone.now(),
-            end_date=timezone.now() + subscription.duration,
-            subscription=subscription
-        )
+class InviteLink(models.Model):
+    name = models.CharField(max_length=255)
+    customer = models.ForeignKey(main.models.Customer, on_delete=models.CASCADE)
+    chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
+    access = models.ForeignKey(
+        CustomerChatAccess, 
+        on_delete=models.CASCADE,
+        related_name="invite_links"
+    )
+    url = models.URLField()
+    create_date = models.DateTimeField(auto_now_add=True)
+    expire_date = models.DateTimeField()
+    member_limit = models.IntegerField(default=1)
+    creates_join_request = models.BooleanField(default=False)
 

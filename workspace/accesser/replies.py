@@ -112,16 +112,28 @@ class MySubsReply(CallbackInlineReplyBuilder):
             for chat in access.chat_group.get_all_child_chats():
                 # Clear all dublicates from two different sub with same chats
                 if chat not in unique_chats:
-                    unique_chats.append(chat)
+                    invite_link = access.invite_links.filter(chat=chat).first()
+                    unique_chats.append(
+                        (
+                            chat,
+                            # invite_link.url if invite_link is not None else None,
+                            getattr(invite_link, "url", None),
+                            access.end_date,
+                        )
+                    )
 
-        for chat in unique_chats:
+        for chat, invite_link, end_date in unique_chats:
             text += _(
-                "{{chat_title}}\nUntil {{date}}\n--------\n"
+                "{{chat_title}}\n"
+                "{{invite_link}}\n"
+                "Until {{date}}\n"
+                "--------"
             ).context(
                 chat_title=chat.title,
-                date=access.end_date
+                invite_link=invite_link,
+                date=end_date
             )
-
+            text += "\n"
         return text.load() 
 
 
@@ -243,27 +255,47 @@ class GiveInviteLinksReply(CallbackInlineReplyBuilder):
         for access in customer_chat_accesses:
             for chat in access.chat_group.chats.all():
                 link = self._create_invite_link(
-                    chat.chat_id, access.end_date
+                    access, chat
                 ) 
                 links.append(
                     (chat.title, link)
                 )
         return links
 
-    def _create_invite_link(self, chat_id: int, end_date: datetime) -> str: 
-        expire_timestamp = int(end_date.timestamp())
-        link_name = self._get_invite_link_name(chat_id)
+    def _create_invite_link(
+        self, 
+        access: models.CustomerChatAccess,
+        chat: models.Chat, 
+    ) -> str: 
+        expire_timestamp = int(access.end_date.timestamp())
+        link_name = self._get_invite_link_name(chat.chat_id)
         try:    
             invite_link = bot.create_chat_invite_link(
                 name=link_name,
-                chat_id=chat_id,  
-                expire_date=expire_timestamp,           # Expiration date as a Unix timestamp
+                chat_id=chat.chat_id,  
+                expire_date=expire_timestamp,  # Expiration date as a Unix timestamp
                 member_limit=1,
-                creates_join_request=False               # This will require administrators to approve join requests
+                creates_join_request=False  # This will require administrators to approve join requests
             )
         except Exception as e:
             log.exception(e)
-        return invite_link.invite_link
+            raise Exception(
+                "Cannot make invite link for {self.customer} "
+                f"to chat {chat_id}:\n {e}"
+            )
+        
+        invite_link_str = invite_link.invite_link
+
+        models.InviteLink.objects.create(
+            name=link_name,
+            url=invite_link_str,
+            customer=self.customer,
+            chat=chat,
+            access=access,
+            expire_date=access.end_date
+        )
+
+        return invite_link_str
 
     def _get_invite_link_name(self, chat_id: int):
         time = timezone.now().timestamp()  # for uniqilize link name
