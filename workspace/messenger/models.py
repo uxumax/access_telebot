@@ -85,6 +85,7 @@ class ShowedInlineButton(models.Model):
 
 class Translation(models.Model):
     name = models.CharField(max_length=255)
+    active = models.BooleanField(default=True)
     from_text = models.TextField(
         unique=True,
         max_length=4096,

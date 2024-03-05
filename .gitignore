@@ -15,6 +15,7 @@ __pycache__/
 env/
 downloads/
 import/
+export/
 var/
 
 # Translations
@@ -36,6 +37,7 @@ migrations/
 
 ### VIM ###
 *.swp
+*.swo
 
 ### Access telebot ###
 logs/

@@ -53,7 +53,7 @@ class CommandReplyAdmin(admin.ModelAdmin):
 
 @admin.register(models.Translation) 
 class TranslationAdmin(admin.ModelAdmin):
-    list_display = ('name', 'from_text', 'to_text')  
+    list_display = ('name', 'active', 'from_text', 'to_text')  
     search_fields = ('name', 'from_text', 'to_text')
     list_filter = ('name',)
 
