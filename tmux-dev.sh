@@ -2,7 +2,8 @@
 
 # Название сессии tmux
 SESSION_NAME="AccessTelebotDev"
-
+VIM_WINDOW_HEIGHT=30
+PORT=8001
 
 # Проверка на существование сессии
 tmux has-session -t $SESSION_NAME 2>/dev/null
@@ -13,7 +14,7 @@ if [ $? != 0 ]; then
     tmux new-session -d -s $SESSION_NAME
 
     # Окно для сервера Django для runserver и command
-    tmux new-window -t $SESSION_NAME -n Debug 
+    tmux new-window -t $SESSION_NAME -n Dev 
 
     # Разделение окна на две панели горизонтально
     tmux split-window -h -t $SESSION_NAME:1
@@ -22,20 +23,27 @@ if [ $? != 0 ]; then
     tmux split-window -v -t $SESSION_NAME:1.0
     tmux split-window -v -t $SESSION_NAME:1.2
 
-    # Настройка панели 1 (левый верхний квадрант)
+    # Dev Left-Up
     tmux send-keys -t $SESSION_NAME:1.0 "cd /home/uxumax/dev/access_telebot/workspace" C-m
     tmux send-keys -t $SESSION_NAME:1.0 "source ../env/bin/activate" C-m
-    tmux send-keys -t $SESSION_NAME:1.0 "python3.11 manage.py runserver 8001" C-m
+    tmux send-keys -t $SESSION_NAME:1.0 "fuser -k $PORT/tcp" C-m
+    tmux send-keys -t $SESSION_NAME:1.0 "gunicorn --workers 3 --bind 0.0.0.0:$PORT access_telebot.wsgi:application" C-m
 
-    # Повторяем настройку для других панелей
+    # Dev Left-Down
+    tmux resize-pane -t $SESSION_NAME:1.1 -U $VIM_WINDOW_HEIGHT
     tmux send-keys -t $SESSION_NAME:1.1 "cd /home/uxumax/dev/access_telebot/workspace" C-m
     tmux send-keys -t $SESSION_NAME:1.1 "source ../env/bin/activate" C-m
-
+    tmux send-keys -t $SESSION_NAME:1.1 "vim ." C-m
+    
+    # Dev Right-Up
     tmux send-keys -t $SESSION_NAME:1.2 "cd /home/uxumax/dev/access_telebot/workspace" C-m
     tmux send-keys -t $SESSION_NAME:1.2 "source ../env/bin/activate" C-m
 
+    # Dev Right-Down
+    tmux resize-pane -t $SESSION_NAME:1.3 -U $VIM_WINDOW_HEIGHT
     tmux send-keys -t $SESSION_NAME:1.3 "cd /home/uxumax/dev/access_telebot/workspace" C-m
     tmux send-keys -t $SESSION_NAME:1.3 "source ../env/bin/activate" C-m
+    tmux send-keys -t $SESSION_NAME:1.3 "vim ." C-m
     
     # Окно для работы с Git
     tmux new-window -t $SESSION_NAME -n Git
