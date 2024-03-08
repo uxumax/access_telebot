@@ -59,7 +59,7 @@ class MySubsReply(CallbackInlineReplyBuilder):
             text = self._get_text()
         else:
             text = _(
-                "Sorry, you don't have active plan right now"
+                "Sorry, you don't have an active plan right now"
             )
 
         self.send_message(
@@ -148,7 +148,7 @@ class GiveInviteLinksReply(CallbackInlineReplyBuilder):
         if invoice.status != "CONFIRMED":
             self.send_message(
                 _(
-                    "Cannot give give keys coz connot find your confirmed invoice"       
+                    "Can't send invite links because can't find your confirmed invoice"       
                 )
             )
 

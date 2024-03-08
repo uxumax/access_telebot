@@ -3,7 +3,7 @@
 # Название сессии tmux
 SESSION_NAME="AccessTelebotDev"
 VIM_WINDOW_HEIGHT=30
-PORT=8001
+PORT=8002
 
 # Проверка на существование сессии
 tmux has-session -t $SESSION_NAME 2>/dev/null
@@ -27,12 +27,13 @@ if [ $? != 0 ]; then
     tmux send-keys -t $SESSION_NAME:1.0 "cd /home/uxumax/dev/access_telebot/workspace" C-m
     tmux send-keys -t $SESSION_NAME:1.0 "source ../env/bin/activate" C-m
     tmux send-keys -t $SESSION_NAME:1.0 "fuser -k $PORT/tcp" C-m
-    tmux send-keys -t $SESSION_NAME:1.0 "gunicorn --workers 3 --bind 0.0.0.0:$PORT access_telebot.wsgi:application" C-m
+    # tmux send-keys -t $SESSION_NAME:1.0 "gunicorn --workers 3 --bind 0.0.0.0:8001 --access-logfile - --error-logfile -  access_telebot.wsgi:application" C-m
+    tmux send-keys -t $SESSION_NAME:1.0 "python manage.py runserver 0.0.0.0:8001" C-m
 
     # Dev Left-Down
     tmux resize-pane -t $SESSION_NAME:1.1 -U $VIM_WINDOW_HEIGHT
     tmux send-keys -t $SESSION_NAME:1.1 "cd /home/uxumax/dev/access_telebot/workspace" C-m
-    tmux send-keys -t $SESSION_NAME:1.1 "source ../env/bin/activate" C-m
+    # tmux send-keys -t $SESSION_NAME:1.1 "source ../env/bin/activate" C-m
     tmux send-keys -t $SESSION_NAME:1.1 "vim ." C-m
     
     # Dev Right-Up
@@ -42,7 +43,7 @@ if [ $? != 0 ]; then
     # Dev Right-Down
     tmux resize-pane -t $SESSION_NAME:1.3 -U $VIM_WINDOW_HEIGHT
     tmux send-keys -t $SESSION_NAME:1.3 "cd /home/uxumax/dev/access_telebot/workspace" C-m
-    tmux send-keys -t $SESSION_NAME:1.3 "source ../env/bin/activate" C-m
+    # tmux send-keys -t $SESSION_NAME:1.3 "source ../env/bin/activate" C-m
     tmux send-keys -t $SESSION_NAME:1.3 "vim ." C-m
     
     # Окно для работы с Git

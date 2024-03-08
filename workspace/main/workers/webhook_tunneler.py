@@ -2,6 +2,7 @@ from access_telebot.logger import get_logger
 from access_telebot.serveo_tunnel_maker import ServeoTunnelMaker
 import typing
 
+from django.conf import settings
 from main import models
 from main.workers import core
 import requests
@@ -57,7 +58,7 @@ class TelegramWebhooker:
 
     @classmethod
     def make_webhook(cls):
-        maker = ServeoTunnelMaker()
+        maker = ServeoTunnelMaker(settings.PORT)
         pid, serveo_host = maker.make()
         webhook_url = f"{serveo_host}/{SECRET_URL_WAY}/main/telegram_webhook/"
         cls._save_new_webhook(pid, webhook_url)

@@ -6,6 +6,9 @@ import select
 import threading
 import signal
 
+from django.conf import settings
+
+
 if __name__ == "__main__":
     from logging import getLogger as get_logger
 else:
@@ -15,16 +18,17 @@ else:
 
 
 class ServeoTunnelMaker:
-    ssh_cmd = [
-        'ssh', 
-        '-o', 
-        'ConnectTimeout=5', 
-        '-R', 
-        '80:localhost:8001', 
-        'serveo.net'
-    ]
-    log = get_logger(__name__)
-    pid: int
+    def __init__(self, port: int):
+        self.ssh_cmd = [
+            'ssh', 
+            '-o', 
+            'ConnectTimeout=5', 
+            '-R', 
+            f'80:localhost:{port}', 
+            'serveo.net'
+        ]
+        self.log = get_logger(__name__)
+        self.pid: int
 
     @staticmethod
     def _get_serveo_host(fd):
@@ -80,7 +84,7 @@ class ServeoTunnelMaker:
         return self.pid, serveo_host
 
 if __name__ == "__main__":
-    pid, serveo_host = ServeoTunnelMaker().make()
+    pid, serveo_host = ServeoTunnelMaker(settings.PORT).make()
     if pid and serveo_host:
         print(pid, serveo_host)
     else:

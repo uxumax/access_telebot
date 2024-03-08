@@ -21,9 +21,9 @@ CommandReply = typing.Union[
 class StartCommandReply(CommandReplyBuilder):
     def build(self):
         text = _(
-            "Hi. I am accessbot. "
-            "I can provide access to some private telegram channels. "
-            "Check Plans below for more info. "
+            "Hi. I am AccessBot. "
+            "I can provide access to some private Telegram channels. "
+            "Check the 'Plans' below for more info."
         )       
         self.send_message(
             text,

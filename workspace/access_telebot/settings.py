@@ -19,6 +19,8 @@ from access_telebot.settings_local import (
     FIELD_ENCRYPTION_KEY,
     LOG_LEVEL,
     TRANSLATION,
+    PORT,
+    TESTER_CHAT_ID,
 )
 
 from pathlib import Path

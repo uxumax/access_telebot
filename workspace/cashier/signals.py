@@ -7,7 +7,7 @@ from django.utils import timezone
 from access_telebot.logger import get_logger
 
 
-from . import wallets
+from .wallets.crypto import tron as tron_wallet
 from . import models
 
 log = get_logger(__name__)
@@ -37,7 +37,7 @@ class CryptoInvoicePreCreate:
 
     def _get_address_model(self, network: str):
         if network == "TRON":
-            return wallets.crypto.tron.get_free_address_model()
+            return tron_wallet.get_free_address_model()
         raise ValueError(
             f"Cannot find wallet model for network {network}"
         )
@@ -67,11 +67,11 @@ class CryptoInvoiceConfirmed(CryptoInvoiceFinal):
 class CryptoInvoiceCanceled(CryptoInvoiceFinal):
     def __init__(self, instance: models.CryptoInvoice):
         instance.status = "CANCELED"
-        self.free_address()
+        self.free_address(instance.address)
 
 
 class CryptoInvoiceExpired(CryptoInvoiceFinal):
     def __init__(self, instance: models.CryptoInvoice):
         instance.status = "EXPIRED"
-        self.free_address()
+        self.free_address(instance.address)
 

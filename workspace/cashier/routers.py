@@ -24,8 +24,11 @@ class CallbackInlineRouter(CallbackInlineRouterBase):
         if _is("NotifyWhenTranzConfirmedReply"):
             return self.build_reply(replies.NotifyWhenTranzConfirmedReply) 
         
-        if _is("CryptoTranzCheckReply"):
-            return self.build_reply(replies.CryptoTranzCheckReply) 
+        if _is("CryptoTranzWaitReply"):
+            return self.build_reply(replies.CryptoTranzWaitReply) 
+
+        if _is("CryptoConfirmWaitReply"):
+            return self.build_reply(replies.CryptoConfirmWaitReply) 
         
         if _is("CryptoPayDoneReply"):
             return self.build_reply(replies.CryptoPayDoneReply) 

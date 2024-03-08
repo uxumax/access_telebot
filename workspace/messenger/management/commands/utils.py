@@ -77,8 +77,11 @@ class MessageToTranslateParser:
         msgstr = re.sub(r'\s+', ' ', msgstr)
         
         # Normalize line endings to Unix-style (LF) for consistency across different platforms
-        msgstr = msgstr.replace("\r\n", "\n").replace("\r", "\n")
+        # msgstr = msgstr.replace("\r\n", "\n").replace("\r", "\n")
         
+        # Remove space after new line sign
+        msgstr = re.sub(r'\\n\s+', r'\\n', msgstr)
+
         return msgstr
 
 

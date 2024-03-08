@@ -1,27 +1,27 @@
-import typing
+# import typing
 from django.conf import settings
 from access_telebot.logger import get_logger
 from telebot import TeleBot
 from messenger.replies import (
-    Callback,
+    # Callback,
     CallbackInlineReplyBuilder,
     translate as _
 )
-from . import wallets
+# from . import wallets
 from . import models
-import main.models
+# import main.models
 import accesser.models
 
-from .wallets.crypto import tron as tron_wallet
+# from .wallets.crypto import tron as tron_wallet
 
 bot = TeleBot(settings.TELEBOT_KEY)
 log = get_logger(__name__)
 
 
-CallbackInlineReply = typing.Union[
-    "ChoosePayMethodReply",
-    "BuildingCryptoInvoiceReply",
-]
+# CallbackInlineReply = typing.Union[
+#     "ChoosePayMethodReply",
+#     "BuildingCryptoInvoiceReply",
+# ]
 
 
 class BuildingInvoiceReplyBuilder(CallbackInlineReplyBuilder):
@@ -105,7 +105,7 @@ class ChoosePayMethodReply(BuildingInvoiceReplyBuilder):
         self._update_invoice(duration)
 
         text = _(
-            "Amount for pay {{amount}} USD. Choose payment method",
+            "Amount to pay: {{amount}} USD. Choose payment method",
         ).context(
             amount=duration.price
         )
@@ -193,7 +193,7 @@ class CheckoutReply(BuildingInvoiceReplyBuilder):
             text += "\n"  
             text += _(
                 "Amount: {{amount}} {{currency}}\n"
-                "Network: {{network}}\n"
+                "Network: {{network}}"
             ).context(
                 amount=i.amount,
                 currency=i.currency,
@@ -227,7 +227,7 @@ class CryptoPayingReply(BuildingInvoiceReplyBuilder):
         invoice = self._deploy_invoice()
         self.send_message(
             _(
-                "We have been reserved for you {{network}} address "
+                "We have reserved a {{network}} address for you "
                 "for {{timeout}} minutes. "
                 "Please send funds during this time."
             ).context(
@@ -246,13 +246,13 @@ class CryptoPayingReply(BuildingInvoiceReplyBuilder):
             f"{invoice.address}"
         )
         self.send_message(
-            _("Please send this amount exactly:")
+            _("Please send this exact amount:")
         )
         self.send_message(
             f"{invoice.amount}"
         )
         self.send_message(
-            _("Please push Paid when you done"),
+            _("Please push 'Paid' when you are done"),
             reply_markup=self._build_markup()
         )
 
@@ -298,7 +298,7 @@ class CryptoInvoicePayingReplyBulder(CallbackInlineReplyBuilder):
 
     def out_of_route(self):
         self.send_message(
-            _("You don't have current active invoice right now")
+            _("You don't have a current active invoice right now")
         )
 
         def build_replacement():
@@ -338,7 +338,9 @@ class CryptoPayResultReply(CryptoInvoicePayingReplyBulder):
 
 class CryptoPayCancelReply(CryptoInvoicePayingReplyBulder):
     def build(self):
-        self.customer.invoice.canceled()
+        self.customer.crypto_invoices.filter(
+            status="PAYING"
+        ).first().canceled()
 
         self.send_message(
             _("Payment has been canceled")
@@ -370,8 +372,8 @@ class CryptoPayDoneReply(CryptoInvoicePayingReplyBulder):
     
     def _build_markup(self):
         self.add_button(
-            _("Check status now"),
-            reply_name="CryptoTranzCheckReply"
+            _("Check transaction now"),
+            reply_name="CryptoTranzWaitReply"
         )
         self.add_button(
             _("Notify me when confirmed"),
@@ -380,12 +382,13 @@ class CryptoPayDoneReply(CryptoInvoicePayingReplyBulder):
         return self.markup
 
 
-class CryptoTranzCheckReply(CryptoInvoicePayingReplyBulder):
+# last CryptoTranzCheckReply
+class CryptoTranzWaitReply(CryptoInvoicePayingReplyBulder):
     def build(self):
         tranzes = self.invoice.transactions.all()
         if tranzes.count() == 0:
             return self.send_message(
-                _("Waiting for transaction. Still have not seen."),
+                _("Waiting for the transaction. Still have not seen it."),
                 reply_markup=self._build_markup()
             )
 
@@ -393,8 +396,32 @@ class CryptoTranzCheckReply(CryptoInvoicePayingReplyBulder):
             # @todo
             # Notify project admin/manager about this
             pass
+        
+        if tranzes.count() > 0:
+            return self.router.redirect(
+                reply_name="CryptoConfirmWaitReply",
+                args=tranzes[0].id
+            )
 
-        tranz = tranzes[0]
+    def _build_markup(self):
+        self.add_button(
+            _("Check transaction now"),
+            reply_name="CryptoTranzWaitReply"
+        )
+        self.add_button(
+            _("Notify me when confirmed"),
+            reply_name="NotifyWhenTranzConfirmedReply"
+        )
+        return self.markup
+
+
+class CryptoConfirmWaitReply(CryptoInvoicePayingReplyBulder):
+    USING_ARGS = (
+        "tranz_id",
+    ) 
+
+    def build(self):
+        tranz = self._get_tranz()
         if tranz.is_confirmed():
             self.invoice.confirmed()
             self.send_message(
@@ -404,17 +431,17 @@ class CryptoTranzCheckReply(CryptoInvoicePayingReplyBulder):
                 app_name="accesser",
                 reply_name="GiveInviteLinksReply",
                 args=[
-                    "c", # invoice code for crypto invoices
+                    "c",  # invoice code for crypto invoices
                     self.invoice.id,
                 ]
             )
         else:
             self.send_message(
                 _(
-                    "We are hav been seen your transaction "
+                    "We are have seen your transaction "
                     "txid: {{txid}}\n\n"
                     "Confirmations\n"
-                    "Now: {{current_confirmations}} \n"  # Сейчас
+                    "Now: {{current_confirmations}}\n"  # Сейчас
                     "Required: {{required_confirmations}}"  # Ожидается
                 ).context(
                     txid=tranz.txid,
@@ -425,10 +452,18 @@ class CryptoTranzCheckReply(CryptoInvoicePayingReplyBulder):
             )
             return
 
+    def _get_tranz(self):
+        tid = self._get_tranz_id()
+        return models.CryptoTransaction.objects.get(pk=tid)
+
+    def _get_tranz_id(self):
+        return self.callback.args[0]
+
     def _build_markup(self):
         self.add_button(
             _("Check confirmations now"),
-            reply_name="CryptoTranzCheckReply"
+            reply_name="CryptoConfirmWaitReply",
+            args=self._get_tranz_id()
         )
         self.add_button(
             _("Notify me when confirmed"),
@@ -441,8 +476,8 @@ class NotifyWhenTranzConfirmedReply(CryptoInvoicePayingReplyBulder):
     def build(self):
         self.send_message(
             _(
-                "Sure! We will notify you when transaction be confirmed "
-                "and will send you invite link"
+                "Sure! We will notify you when the transaction is confirmed "
+                "and will send you an invite link"
             )
         )
         # Notifications sends automatically by messenger worker
