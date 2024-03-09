@@ -76,19 +76,23 @@ class ChooseAccessDurationReply(BuildingInvoiceReplyBuilder):
         self.invoice.save()
 
     def _build_markup(self):
-        durations = self.subscription.durations.all()
+        durations = self.invoice.subscription.durations.all()
         for duration in durations:
             self.add_button(
                 _(
-                    "{{duration}} days - {{price}} USDT", 
+                    "{{duration}} - {{price}} USDT", 
                 ).context(
-                    duration=duration.duration,
+                    duration=duration.format_duration(),
                     price=duration.price,
                 ),
                 reply_name="ChoosePayMethodReply",
                 args=duration.id
             )
-
+        self.add_button(
+            _("Back"),
+            app_name="accesser",
+            reply_name="AllSubsReply"
+        )
         return self.markup    
 
 
@@ -184,10 +188,10 @@ class CheckoutReply(BuildingInvoiceReplyBuilder):
         text = _(
             "Check invoice total\n"
             "Subscription: {{subscription}}\n"
-            "Duration: {{duration}}"
+            "Duration: {{duration}} "
         ).context(
             subscription=i.subscription.name,
-            duration=i.duration.duration
+            duration=i.duration.format_duration()
         )
         if i.currency_type == "CRYPTO":
             text += "\n"  

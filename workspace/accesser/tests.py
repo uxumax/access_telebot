@@ -12,7 +12,8 @@ class MockModelCreator:
         )
         subscription.save()
         duration = cls.SubscriptionDurationPrice(
-            subscription=subscription
+            subscription=subscription,
+            price=Decimal("20"),
         )
         duration.save()
         return subscription

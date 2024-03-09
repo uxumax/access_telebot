@@ -4,7 +4,9 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
 from django.db.models import QuerySet
-
+from messenger.replies import (
+    translate as _
+)
 import main.models
 
 
@@ -90,6 +92,35 @@ class SubscriptionDurationPrice(models.Model):
 
     def __str__(self):
         return f"{self.subscription.name} | {self.duration} | {self.price}"
+    
+    def format_duration(self):
+        days, seconds = self.duration.days, self.duration.seconds
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+
+        # Составление строки результатов в зависимости от длительности
+        parts = []
+        if days > 0:
+            parts.append(
+                _("{{quantity}} day(s)").context(
+                    quantity=days
+                ).load()  # Get string intead Text for correct .join work
+            )
+        if hours > 0:
+            parts.append(
+                _("{{quantity}} hour(s)").context(
+                    quantity=hours
+                ).load()  # Get string intead Text for correct .join work
+            )
+        if minutes > 0:
+            parts.append(
+                _("{{quantity}} minute(s)").context(
+                    quantity=minutes
+                ).load()  # Get string intead Text for correct .join work
+            )
+
+        # Возвращение форматированной строки
+        return ", ".join(parts) if parts else _("less than a minute")
 
 
 class SubscriptionChatAccess(models.Model):

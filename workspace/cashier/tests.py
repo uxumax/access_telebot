@@ -28,10 +28,12 @@ class MockModelCreator:
         subscription = accesser.tests.MockModelCreator\
             .Subscription()
         subscription.save()
+        duration = subscription.durations.first()
         return models.BuildingInvoice(
             customer=kwargs["customer"],
             subscription=subscription,
-            duration=subscription.durations.first()
+            duration=duration,
+            amount=duration.price
             # **kwargs
         )
 
@@ -102,6 +104,11 @@ class TestChooseAccessDurationReply(CashierReplyTestCase):
         invoice = MockModelCreator.BuildingInvoice(
             customer=self.customer
         )
+        # Create one more duration coz this dialog skiped 
+        # if only one duration of this subscription
+        accesser.tests.MockModelCreator.SubscriptionDurationPrice(
+            subscription=invoice.subscription
+        ).save()
         self.reply = self.prepare_reply(
             "ChooseAccessDurationReply",
             args=[
@@ -128,6 +135,7 @@ class TestChoosePayMethodReply(CashierReplyTestCase):
 
     def test(self):
         self.reply.build()
+
 
 class TestCheckoutReply(CashierReplyTestCase):
     def setUp(self):
