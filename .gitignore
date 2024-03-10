@@ -44,4 +44,4 @@ fixtures/
 logs/
 settings_local.py
 media/
-
+static/
