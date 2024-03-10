@@ -32,4 +32,6 @@ LOG_LEVEL = logging.INFO
 TRANSLATION = "Run command make_translation <translation_name> before"
 PORT = 8001  # django/gunicorn port
 TESTER_CHAT_ID = "Bot tester chat id"
-STATIC_ROOT = "staticfiles"
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
