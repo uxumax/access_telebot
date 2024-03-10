@@ -14,10 +14,12 @@ DATABASES = {
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-SECRET_URL_WAY = "mysecretway"
+SECRET_URL_WAY = ""  # Set you secret admin page path"
+
+TELEBOT_KEY = "Get key from @BotFather"
 
 FIELD_ENCRYPTION_KEY = base64.urlsafe_b64encode(
-    b"e0bc309cf0f362d87beb39451cd83321"
+    b"Use command generate_field_encryption_key for generate this key"
 )
 
 ALLOWED_HOSTS_REGEX = [
@@ -26,7 +28,7 @@ ALLOWED_HOSTS_REGEX = [
     r'^[a-f0-9]{32}\.serveo\.net$',
 ]
 
-LOG_LEVEL = logging.DEBUG
-TRANSLATION = None
-PORT = 8001
-TESTER_CHAT_ID = None
+LOG_LEVEL = logging.INFO
+TRANSLATION = "Run command make_translation <translation_name> before"
+PORT = 8001  # django/gunicorn port
+TESTER_CHAT_ID = "Bot tester chat id"
