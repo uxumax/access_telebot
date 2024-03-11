@@ -22,6 +22,9 @@ FIELD_ENCRYPTION_KEY = base64.urlsafe_b64encode(
     b"Use command generate_field_encryption_key for generate this key"
 )
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://domain.com'
+]
 ALLOWED_HOSTS_REGEX = [
     r"0\.0\.0\.0",
     r"127\.0\.0\.1",

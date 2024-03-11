@@ -22,6 +22,7 @@ from access_telebot.settings_local import (
     PORT,
     TESTER_CHAT_ID,
     STATIC_ROOT,
+    CSRF_TRUSTED_ORIGINS,
 )
 
 from pathlib import Path
