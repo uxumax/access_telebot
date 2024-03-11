@@ -35,6 +35,7 @@ target/
 *.pot
 *.pyc
 migrations/
+!migrations/__init__.py
 fixtures/
 
 ### VIM ###

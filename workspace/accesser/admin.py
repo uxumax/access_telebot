@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils.safestring import mark_safe
 from . import forms
 from . import models
 
@@ -45,7 +46,7 @@ class ChatAdmin(admin.ModelAdmin):
         data = form.chat_data
         obj.title = data.title
         obj.chat_type = data.type
-        obj.invite_link = getattr(data, "invite_link",  None)
+        obj.invite_link = getattr(data, "invite_link", None)
         super().save_model(request, obj, form, change)
 
 
@@ -53,6 +54,7 @@ class ChatAdmin(admin.ModelAdmin):
 class SubscriptionAdmin(admin.ModelAdmin):
     list_display = (
         'name', 
+        'durations_display',
     )
     list_filter = ('name',)
     search_fields = ('name',)
@@ -60,5 +62,16 @@ class SubscriptionAdmin(admin.ModelAdmin):
         SubscriptionDurationPriceInline,
         SubscriptionChatAccessInline,
     ]
+
+    def durations_display(self, obj):
+        text_list = ""
+        for duration in obj.durations.all():
+            row = (
+                f"{duration.duration} | {duration.price}"
+                "<br>"  
+            )
+            text_list += row
+        return mark_safe(text_list)  # Mark the output as safe HTML content
+
 
 
