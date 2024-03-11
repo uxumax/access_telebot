@@ -15,6 +15,7 @@ from access_telebot.settings_local import (
     ALLOWED_HOSTS_REGEX, 
     DEBUG,
     TELEBOT_KEY,
+    TELEBOT_WEBHOOK,
     SECRET_URL_WAY,
     FIELD_ENCRYPTION_KEY,
     LOG_LEVEL,

@@ -17,6 +17,7 @@ downloads/
 import/
 export/
 var/
+staticfiles/
 
 # Translations
 *.mo
@@ -44,4 +45,3 @@ fixtures/
 logs/
 settings_local.py
 media/
-static/

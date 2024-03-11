@@ -18,20 +18,6 @@ bot = telebot.TeleBot(TELEBOT_KEY, threaded=False)
 
 
 class TelegramWebhooker:
-    log = get_logger(__name__)
-    
-    @staticmethod
-    def get_current_webhook_url() -> typing.Union['str', None]:
-        webhook = models.TelegramWebhook.load()
-        return webhook.url
-
-    @staticmethod
-    def _save_new_webhook(new_pid: int, new_url: str):
-        webhook = models.TelegramWebhook.load()
-        webhook.url = new_url
-        webhook.pid = new_pid
-        webhook.save()
-
     @staticmethod
     def is_webhook_working(webhook_url: str) -> bool:
         """
@@ -56,6 +42,38 @@ class TelegramWebhooker:
             log.warning(f"Error checking webhook: {e}")
             return False
 
+
+class DomainTelegramWebhooker(TelegramWebhooker):
+    def __init__(self, host: str):
+        self.host = host
+
+    def get_webhook_url(self):
+        webhook_url = f"{self.host}/{SECRET_URL_WAY}/main/telegram_webhook/"
+        self._save_webhook(webhook_url)
+        return webhook_url         
+
+    @staticmethod
+    def _save_webhook(url: str):
+        webhook = models.TelegramWebhook.load()
+        webhook.url = url 
+        webhook.pid = None
+        webhook.save()
+
+
+class ReverseTelegramWebhooker(TelegramWebhooker):
+    
+    @staticmethod
+    def get_current_webhook_url() -> typing.Union['str', None]:
+        webhook = models.TelegramWebhook.load()
+        return webhook.url
+
+    @staticmethod
+    def _save_new_webhook(new_pid: int, new_url: str):
+        webhook = models.TelegramWebhook.load()
+        webhook.url = new_url
+        webhook.pid = new_pid
+        webhook.save()
+
     @classmethod
     def make_webhook(cls):
         maker = ServeoTunnelMaker(settings.PORT)
@@ -73,7 +91,7 @@ class TelegramWebhooker:
     def get_webhook_url(cls):
         url = cls.get_current_webhook_url()
 
-        cls.log.info(
+        log.info(
             "Checking webhook..."
         )
 
@@ -81,7 +99,7 @@ class TelegramWebhooker:
             if cls.is_webhook_working(url):
                 return url
         
-        cls.log.info(
+        log.info(
             f"Current webhook url: {url} is not working"
             " Create new one..."
         )
@@ -92,7 +110,7 @@ class TelegramWebhooker:
                 "Has been made new webhook but new tunnel not working too"
             )
 
-        cls.log.info(
+        log.info(
             f"New webhook has been made and working: {url}"
         )
 
@@ -107,13 +125,28 @@ class Worker(core.Worker):
     stat = models.WebhookTunnelerWorkerStat
     beat_interval = 10
 
-    log = get_logger(__name__)
-    webhooker = TelegramWebhooker
+    def __init__(self):
+        super().__init__()
+        self.config = settings.TELEBOT_WEBHOOK
+        self._determine_webhooker()
+
+    def _determine_webhooker(self):
+        if self.config["type"] == "HOST":
+            self.webhooker = DomainTelegramWebhooker(
+                host=self.config["host"]
+            )
+        else:
+            self.webhooker = ReverseTelegramWebhooker
 
     def start(self):
         webhook_url = self.webhooker.get_webhook_url()
         bot.delete_webhook()
+        sleep(1)
         bot.set_webhook(url=webhook_url)        
+
+        if self.config["type"] == "DOMAIN":
+            log.info("Do not start Webhook worker coz DOMAIN webhook type")
+            return
 
         while not self.stop_event.is_set():
             self._beat(webhook_url)
@@ -124,7 +157,6 @@ class Worker(core.Worker):
             self._check_webhook_url(webhook_url)
         except WebhookUrlIsNotWorkingException:
             return self.start()
-
     
     def _check_webhook_url(self, webhook_url):
         if self.webhooker.is_webhook_working(webhook_url):
