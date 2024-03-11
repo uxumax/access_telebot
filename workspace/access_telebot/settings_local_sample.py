@@ -19,8 +19,8 @@ SECRET_URL_WAY = ""  # Set you secret admin page path"
 TELEBOT_KEY = "Get key from @BotFather"
 TELEBOT_WEBHOOK = {
     "type": "SERVEO",  # SERVEO is nice for run on local machine
-    # "type": "DOMAIN",  # DOMAIN is nice for run on vps like
-    # "domain": "domain.com", # Can be IPv4 also
+    # "type": "HOST",  # HOST is nice for run on vps like
+    # "host": "https://domain.com", # Can be IPv4 also
 }
 
 FIELD_ENCRYPTION_KEY = base64.urlsafe_b64encode(
@@ -28,7 +28,7 @@ FIELD_ENCRYPTION_KEY = base64.urlsafe_b64encode(
 )
 
 CSRF_TRUSTED_ORIGINS = [
-    'domain.com'
+    'https://domain.com'
 ]
 ALLOWED_HOSTS_REGEX = [
     r"0\.0\.0\.0",

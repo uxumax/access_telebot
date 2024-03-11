@@ -144,7 +144,7 @@ class Worker(core.Worker):
         sleep(1)
         bot.set_webhook(url=webhook_url)        
 
-        if self.config["type"] == "DOMAIN":
+        if self.config["type"] == "HOST":
             log.info("Do not start Webhook worker coz DOMAIN webhook type")
             return
 
