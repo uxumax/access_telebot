@@ -37,16 +37,16 @@ class ChatGroupAdmin(admin.ModelAdmin):
 @admin.register(models.Chat)
 class ChatAdmin(admin.ModelAdmin):
     form = forms.ChatForm
-    list_display = ('chat_id', 'title', 'chat_type', 'invite_link')
+    list_display = ('chat_id', 'title', 'chat_type')
     list_filter = ('chat_type',)
     search_fields = ('title', 'chat_id')
-    readonly_fields = ['title', 'chat_type', 'invite_link'] 
+    readonly_fields = ['title', 'chat_type'] 
 
     def save_model(self, request, obj, form, change):
         data = form.chat_data
         obj.title = data.title
         obj.chat_type = data.type
-        obj.invite_link = getattr(data, "invite_link", None)
+        # obj.invite_link = getattr(data, "invite_link", None)
         super().save_model(request, obj, form, change)
 
 

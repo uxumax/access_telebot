@@ -11,8 +11,10 @@ import main.models
 
 
 class ChatTypeChoices(models.TextChoices):
-    SUPERGROUP = 'supergroup', 'Supergroup'
+    SUPERGROUP = 'supergroup', 'Forum'
     GIGAGROUP = 'gigagroup', 'Gigagroup'
+    CHANNEL = 'channel', 'Channel'
+    GROUP = 'group', 'Group'
 
 
 class ChatGroup(models.Model):
@@ -53,13 +55,13 @@ class Chat(models.Model):
     chat_type = models.CharField(
         max_length=25,
         choices=ChatTypeChoices.choices,
-        default=ChatTypeChoices.SUPERGROUP
+        default=ChatTypeChoices.CHANNEL
     )
-    invite_link = models.URLField(
-        max_length=1024, 
-        blank=True, 
-        null=True
-    )
+    # invite_link = models.URLField(
+    #     max_length=1024, 
+    #     blank=True, 
+    #     null=True
+    # )
 
     def __str__(self):
         return f"{self.title} ({self.chat_type})"

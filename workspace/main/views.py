@@ -11,7 +11,7 @@ from django.utils.decorators import method_decorator
 import messenger.replies
 import messenger.routers
 import messenger.models
-
+import accesser.models
 from access_telebot.settings import TELEBOT_KEY
 from access_telebot.logger import get_logger
 
@@ -182,7 +182,7 @@ class TelegramWebhookView(View):
 
     def post(self, request):
         update = self._decode_update(request)
-        log.info(f"UPDATE:\n{update}")
+        # log.info(f"UPDATE:\n{update}")
 
         if self._is_skip_update(update):
             return JsonResponse({"status": 200})
@@ -196,7 +196,10 @@ class TelegramWebhookView(View):
             return JsonResponse({"status": 200})
 
         # Обработка обновлений о статусе члена чата
-        self._process_chat_member_update(update)
+        try:
+            self._process_chat_member_update(update)
+        except Exception as e:
+            log.exception(e)
 
         bot.process_new_updates([update])
 
@@ -214,30 +217,15 @@ class TelegramWebhookView(View):
         # Обновление не пропускается, если это запрос обратного вызова
         callback_query = self._is_callback_query(update)
         # Обновление не пропускается, если это изменение статуса члена чата
-        chat_member_update = hasattr(update, "my_chat_member")
-        
+        chat_member_update = self._is_chat_member_update(update)
+        # log.info(f"chat_member_update bool: {chat_member_update}") 
         # Если обновление не относится ни к одному из вышеуказанных типов, оно пропускается
         return not (private_message or callback_query or chat_member_update)
 
-    def _process_chat_member_update(self, update):
-        # Проверяем, есть ли обновление статуса члена чата
-        if not hasattr(update, "my_chat_member"):
-            return
-        # Получаем данные обновления
-        new_status = update.my_chat_member.new_chat_member.status
-        if new_status in ["administrator", "creator"]:
-            # Сохраняем или обновляем информацию о чате
-            chat_info = update.my_chat_member.chat
-            chat_type = models.ChatTypeChoices.SUPERGROUP \
-                if chat_info.type == "supergroup" else models.ChatTypeChoices.GROUP
-            models.Chat.objects.update_or_create(
-                chat_id=chat_info.id,
-                defaults={
-                    "title": chat_info.title or "",
-                    "chat_type": chat_type,
-                    "invite_link": ""
-                }
-            )
+    @staticmethod
+    def _is_chat_member_update(update):
+        return hasattr(update, "my_chat_member") \
+            and update.my_chat_member is not None
 
     @staticmethod
     def _is_private_message(update) -> bool:
@@ -250,3 +238,23 @@ class TelegramWebhookView(View):
     @staticmethod
     def _is_callback_query(update) -> bool:
         return hasattr(update, "callback_query") and update.callback_query
+
+    def _process_chat_member_update(self, update):
+        if not self._is_chat_member_update(update):
+            return
+
+        # Получаем данные обновления
+        new_status = update.my_chat_member.new_chat_member.status
+        if new_status in ["administrator", "creator"]:
+            # Сохраняем или обновляем информацию о чате
+            chat_info = update.my_chat_member.chat
+            chat_type = chat_info.type
+            # log.debug(f"CT: {chat_type}")
+            accesser.models.Chat.objects.update_or_create(
+                chat_id=chat_info.id,
+                defaults={
+                    "title": chat_info.title or "",
+                    "chat_type": chat_type,
+                }
+            )
+
