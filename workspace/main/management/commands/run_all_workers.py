@@ -7,18 +7,22 @@ import sys
 import signal
 
 from main.workers import webhook_tunneler
-from cashier.workers import tron_transaction_checker, invoice_expire_checker, invoice_confirm_checker
+from cashier.workers import (
+    tron_transaction_checker,
+    invoice_expire_checker,
+    invoice_confirm_checker,
+)
 from accesser.workers import customer_access_revoker
 
 stop_event = Event()
 logging.basicConfig(
     level=logging.ERROR, 
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
 
 class Command(BaseCommand):
-    help = 'Run all workers in several threads and monitor their last beat'
+    help = "Run all workers in several threads and monitor their last beat"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -31,29 +35,25 @@ class Command(BaseCommand):
         ]
         self.threads = []
 
-
     def handle(self, *args, **options):
         signal.signal(signal.SIGINT, self._sigint_handler)
 
         for worker in self.workers:
             print("Worker", worker, "started")
-            thread = Thread(
-                target=lambda: self.start_worker_with_error_logging(worker)
-            )
+            thread = Thread(target=lambda: self.start_worker_with_error_logging(worker))
             thread.start()
             self.threads.append(thread)
 
-
         self.stdout.write(
-            self.style.SUCCESS(
-                'All workers have been started. Use Ctrl+C to stop.'
-            )
+            self.style.SUCCESS("All workers have been started. Use Ctrl+C to stop.")
         )
 
         stop_event.wait()  # Ожидание сигнала остановки
 
     def _sigint_handler(self, signum, frame):
-        self.stdout.write(self.style.WARNING('Interrupt signal received. Shutting down...'))
+        self.stdout.write(
+            self.style.WARNING("Interrupt signal received. Shutting down...")
+        )
         stop_event.set()  # Установка события остановки для остановки всех потоков
 
         for worker in self.workers:
@@ -63,11 +63,12 @@ class Command(BaseCommand):
             if thread.is_alive():
                 thread.join()  # Ожидание завершения работы потока
 
-        self.stdout.write(self.style.SUCCESS('All workers have been stopped.'))
-
+        self.stdout.write(self.style.SUCCESS("All workers have been stopped."))
 
     def start_worker_with_error_logging(self, worker):
         try:
             worker.start()
         except Exception as e:
-            logging.exception("Error in worker {type(worker).__name__}: {e}", exc_info=True)
+            logging.exception(
+                "Error in worker {type(worker).__name__}: {e}", exc_info=True
+            )

@@ -152,8 +152,15 @@ class Worker(core.Worker):
             return
 
         while not self.stop_event.is_set():
-            self._beat(webhook_url)
-            self.wait()
+            try:
+                self._beat(webhook_url)
+                self.wait()
+            except Exception as e:
+                log.exception(e)
+                break
+
+        log.warning(f"Worker:{__name__} has been stopped")
+        return
 
     def _beat(self, webhook_url: str):
         try:

@@ -18,8 +18,15 @@ class Worker(core.Worker):
 
     def start(self):
         while not self.stop_event.is_set():
-            self._beat()
-            self.wait()
+            try:
+                self._beat()
+                self.wait()
+            except Exception as e:
+                log.exception(e)
+                break
+
+        log.warning(f"Worker:{__name__} has been stopped")
+        return
 
     def _beat(self):
         self._delete_expired_building_invoices()
