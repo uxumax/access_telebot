@@ -39,5 +39,9 @@ class ChatForm(forms.ModelForm):
             self.chat_data = chat_data
         except telebot.apihelper.ApiTelegramException as e:
             raise ValidationError({
-                "chat_id": f"Cannot find chat with ID: {chat_id}. Error: {str(e)}"
+                "chat_id": (
+                    f"Cannot find chat with ID:{chat_id} in bot chat list. "
+                    "Did you forget add channel and  admin rights to access bot?"
+                    f"Error: {str(e)}"
+                )
             }) 
