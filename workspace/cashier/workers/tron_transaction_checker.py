@@ -1,7 +1,7 @@
 import requests
 import typing
 from decimal import Decimal
-from time import sleep
+# from time import sleep
 
 from main.workers import core
 from access_telebot.logger import get_logger

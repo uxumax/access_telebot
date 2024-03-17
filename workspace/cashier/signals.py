@@ -1,8 +1,8 @@
-from django.db.models.signals import (
-    # pre_save,
-    post_save,
-)
-from django.dispatch import receiver
+# from django.db.models.signals import (
+#     pre_save,
+#     post_save,
+# )
+# from django.dispatch import receiver
 from django.utils import timezone
 from access_telebot.logger import get_logger
 
@@ -27,7 +27,10 @@ class CryptoInvoicePreCreate:
         i = instance
         i.address = self._get_address(i.network)
         i.expire_date = self._get_expire_date()
-        i.customer.building_invoice.delete()
+        if hasattr(i.customer, "building_invoice"):
+            i.customer.building_invoice.delete()
+        else:
+            log.warning("Created CryptoInvoice but BuildingInvoice does not exists")
 
     def _get_address(self, network: str):
         address_model = self._get_address_model(network)
@@ -41,6 +44,7 @@ class CryptoInvoicePreCreate:
         raise ValueError(
             f"Cannot find wallet model for network {network}"
         )
+
     def _get_expire_date(self):
         return timezone.now() + models.CryptoInvoice.PAYING_TIMEOUT
         
