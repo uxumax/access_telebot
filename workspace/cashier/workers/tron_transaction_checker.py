@@ -1,7 +1,7 @@
 import requests
 import typing
 from decimal import Decimal
-# from time import sleep
+from time import sleep
 
 from main.workers import core
 from access_telebot.logger import get_logger
@@ -14,7 +14,40 @@ from django.conf import settings
 log = get_logger(__name__)
 
 
+USDT_CONTRACT = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"
+
+
 class TronTransactionDataDecoder:
+    # pprint(transaction)  # Example of transaction
+    # {'block': 59000000,
+    #  'block_ts': 1700000000000,
+    #  'confirmed': True,
+    #  'contractRet': 'SUCCESS',
+    #  'contract_address': 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
+    #  'contract_type': 'trc20',
+    #  'finalResult': 'SUCCESS',
+    #  'fromAddressIsContract': False,
+    #  'from_address': 'TO6yKgS000000000000000000000000000',
+    #  'from_address_tag': {},
+    #  'quant': '5000000',
+    #  'revert': False,
+    #  'riskTransaction': False,
+    #  'status': 0,
+    #  'toAddressIsContract': False,
+    #  'to_address': 'TFAEqA0000000000000000000000000000',
+    #  'to_address_tag': {},
+    #  'tokenInfo': {'issuerAddr': 'THPvaUhoh2Qn2y9THCZML3H815hhFhn5YC',
+    #                'tokenAbbr': 'USDT',
+    #                'tokenCanShow': 1,
+    #                'tokenDecimal': 6,
+    #                'tokenId': 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
+    #                'tokenLevel': '2',
+    #                'tokenLogo': 'https://static.tronscan.org/production/logo/usdtlogo.png',
+    #                'tokenName': 'Tether USD',
+    #                'tokenType': 'trc20',
+    #                'vip': True},
+    #  'transaction_id': '80a0000000000000000000000000000000000000000000000000000000000000'}
+
     def __init__(
         self, 
         transaction: cashier.types.ResponseTronContactTransaction,
@@ -27,22 +60,23 @@ class TronTransactionDataDecoder:
         amount = self._decode_transaction_amount()
         confirmations = self._calc_confirmations()
         return {
-            'txid': self.transaction["txID"],
+            'txid': self.transaction["transaction_id"],
             "amount": amount,
             "confirmations": confirmations,
         }
 
     def _decode_transaction_amount(self) -> Decimal:
-        data_hex = self.transaction["raw_data"][
-            "contract"
-        ][0]["parameter"]["value"]["data"]
-        amount_hex = data_hex[-64:]
-        int_amount = int(amount_hex, 16)
+        # data_hex = self.transaction["raw_data"][
+        #     "contract"
+        # ][0]["parameter"]["value"]["data"]
+        # amount_hex = data_hex[-64:]
+        # int_amount = int(amount_hex, 16)
+        int_amount = self.transaction["quant"]
         deciaml_amount = Decimal(int_amount) / Decimal('10') ** 6 
         return deciaml_amount
 
     def _calc_confirmations(self):
-        return self.current_block_number - self.transaction["blockNumber"]
+        return self.current_block_number - self.transaction["block"]
 
 
 class TronTransactionsGetter:    
@@ -69,7 +103,8 @@ class TronTransactionsGetter:
     
     @staticmethod
     def _get_current_block_number() -> int:
-        endpoint = f'{settings.TRON_API_URL}/v1/blocks/latest/events'
+        API_HOST = "https://api.trongrid.io"
+        endpoint = f'{API_HOST}/v1/blocks/latest/events'
         response = requests.get(endpoint)
         if response.status_code == 200:
             current_block = response.json()
@@ -79,22 +114,29 @@ class TronTransactionsGetter:
 
     @staticmethod
     def _get_transactions(address: str):
-        endpoint = f'{settings.TRON_API_URL}/v1/accounts/{address}/transactions'
+        API_HOST = "https://apilist.tronscanapi.com/api"
+        endpoint = (
+            f"{API_HOST}/new/token_trc20/transfers"
+            f"?contract_address={USDT_CONTRACT}"
+            f"&toAddress={address}"
+            "&confirm="
+        )
+        log.debug(endpoint)
         response = requests.get(endpoint)
         if response.status_code != 200:
             raise Exception(
                 "Cannot get transactions for check confirmations. "
                 f"Response status: {response.status_code}"
             )
-        transactions = response.json()["data"]
+        # log.debug(f"{response.json()}")
+        transactions = response.json()["token_transfers"]
         return transactions
 
     @staticmethod
     def _is_usdt_transaction(transaction):
-        data = transaction["raw_data"]["contract"][0]["parameter"]["value"]
-        if "contract_address" not in data:
+        if "contract_address" not in transaction:
             return False
-        if settings.TRON_USDT_CONTRACT != data["contract_address"]:
+        if USDT_CONTRACT != transaction["contract_address"]:
             return False
         return True
 
@@ -132,7 +174,6 @@ class InvoiceTransactionChecker:
         ]
     ) -> typing.Optional[cashier.types.DecodedTransaction]:
         for tx in transactions:
-            
             if tx["confirmations"] == 0:
                 continue
             
