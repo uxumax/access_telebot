@@ -47,5 +47,5 @@ class TronAddressAdmin(admin.ModelAdmin):
     )  # Поля, которые будут отображаться в списке
     list_filter = ("status", "create_date")  # Фильтры по статусу и дате создания
     search_fields = ("address",)  # Поиск по адресу
-
+    exclude = ("private_key",)
     # При необходимости можно настроить и другие параметры административного интерфейса
