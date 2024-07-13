@@ -342,9 +342,11 @@ class CryptoPayResultReply(CryptoInvoicePayingReplyBulder):
 
 class CryptoPayCancelReply(CryptoInvoicePayingReplyBulder):
     def build(self):
-        self.customer.crypto_invoices.filter(
+        invoice = self.customer.crypto_invoices.filter(
             status="PAYING"
-        ).first().canceled()
+        ).first()
+        if invoice:
+            invoice.canceled()
 
         self.send_message(
             _("Payment has been canceled")
