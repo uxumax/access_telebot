@@ -180,6 +180,7 @@ class ReplyBuilder:
         bot.send_message(
             self.customer.chat_id,
             text=message_display,
+            parse_mode="Markdown",
             *args, **kwargs
         )
 
@@ -293,7 +294,8 @@ class CustomCallbackInlineReply(CustomReplyBuilder):
         bot.send_message(
             self.callback.message.chat.id,  # Получаем ID чата из callback.message
             reply.text,
-            reply_markup=self.build_markup(reply)
+            reply_markup=self.build_markup(reply),
+            parse_mode="Markdown",
         )
 
 
