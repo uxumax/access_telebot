@@ -45,6 +45,11 @@ class AllSubsReply(CallbackInlineReplyBuilder):
                 "cashier", "ChooseAccessDurationReply",
                 args=sub.id
             )
+        self.add_button(
+            _("Back"),
+			app_name="main",
+            reply_name="StartReply"
+        )
 
         return self.markup
 

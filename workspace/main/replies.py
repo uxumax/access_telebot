@@ -6,6 +6,7 @@ from telebot.types import (
 )
 from messenger.replies import (
     CommandReplyBuilder,
+    CallbackInlineReplyBuilder,
     translate as _,
 )
 from messenger.routers import Callback
@@ -43,3 +44,11 @@ class StartCommandReply(CommandReplyBuilder):
         )
         return self.markup
 
+
+class StartReply(CallbackInlineReplyBuilder):
+    def build(self):
+        return self.router.redirect(
+            app_name="main",
+            reply_name="StartCommandReply",
+            reply_type="COMMAND"
+        )
