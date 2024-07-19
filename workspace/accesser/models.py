@@ -17,6 +17,13 @@ class ChatTypeChoices(models.TextChoices):
     GROUP = 'group', 'Group'
 
 
+class ChatGroupManager(models.Manager):
+    def with_subscription(self):
+        self.filter(
+            subscription_accesses__isnull=False
+        ).all()
+        
+
 class ChatGroup(models.Model):
     name = models.CharField(max_length=255)
     chats = models.ManyToManyField(
@@ -31,6 +38,7 @@ class ChatGroup(models.Model):
         null=True, 
         blank=True
     )
+    objects = ChatGroupManager()
 
     def __str__(self):
         return self.name
@@ -44,6 +52,17 @@ class ChatGroup(models.Model):
             chats = chats | child_group.get_all_child_chats()
         return chats.distinct()
 
+    def get_top_parent(self) -> "ChatGroup":
+        # Get parent recursively until parent=None
+        if self.parent_group is None:
+            return self
+        return self.parent_group.get_top_parent()
+
+    def _get_subscriptions(self) -> list:
+        accesses = self.subscription_chat_accesses.all()
+        subs = [a.subscription for a in accesses]
+        return subs
+            
 
 class CustomerAccessRevokerWorkerStat(main.models.WorkerStatAbstract):
     """Worker stat model"""
@@ -134,7 +153,7 @@ class SubscriptionChatAccess(models.Model):
     chat_group = models.ForeignKey(
         ChatGroup,
         on_delete=models.CASCADE,
-        # related_name="subscription_accesses"
+        related_name="subscription_chat_accesses"
     )
 
 

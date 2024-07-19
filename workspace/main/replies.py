@@ -1,15 +1,10 @@
 import typing
 from telebot import TeleBot
-from telebot.types import (
-    InlineKeyboardMarkup,
-    InlineKeyboardButton
-)
 from messenger.replies import (
     CommandReplyBuilder,
     CallbackInlineReplyBuilder,
     translate as _,
 )
-from messenger.routers import Callback
 from access_telebot.settings import TELEBOT_KEY
 
 
@@ -35,7 +30,7 @@ class StartCommandReply(CommandReplyBuilder):
         self.add_button(
             _("Plans"),
             app_name="accesser",
-            reply_name="AllSubsReply"
+            reply_name="ChatGroupsReply"
         )
         self.add_button(
             _("My plan"),
