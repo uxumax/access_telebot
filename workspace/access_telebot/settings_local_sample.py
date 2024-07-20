@@ -46,3 +46,33 @@ import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '%(asctime)s %(levelname)s [%(name)s:%(lineno)s] %(module)s %(process)d %(thread)d %(message)s'
+        }
+    },
+    'handlers': {
+        'main': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'formatter': 'verbose',
+            'filename': f'{BASE_DIR}/logs/all.log',
+            'maxBytes': 1024 * 1024 * 100,  # 100 mb
+        }
+    },
+    'loggers': {
+        'console': {
+            'level': 'DEBUG',
+            'handlers': ['main'],
+            'propagate': True,
+        },
+        'root': {
+            'level': 'DEBUG',
+            'handlers': ['main'],
+            'propagate': True,
+        },
+    }
+}
