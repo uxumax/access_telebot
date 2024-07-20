@@ -91,7 +91,7 @@ class ChooseAccessDurationReply(BuildingInvoiceReplyBuilder):
         self.add_button(
             _("Back"),
             app_name="accesser",
-            reply_name="AllSubsReply"
+            reply_name="ChatGroupsReply"
         )
         return self.markup    
 
