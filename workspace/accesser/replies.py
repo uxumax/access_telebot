@@ -27,28 +27,62 @@ CallbackInlineReply = typing.Union[
 ]
 
 
+class GroupedSubsReplyBuilder(CallbackInlineReplyBuilder):
+    USING_ARGS = (
+        'group_id'
+    )
+
+    def is_group_id_set(self):
+        return self.get_group_id() is not None
+
+    def get_group_id(self) -> int:
+        group_id: str = self.callback.args[0] if self.callback.args else None
+        return int(group_id)
+
+    def get_group(self):
+        if self._group is None:
+            group_id = self.get_group_id()
+            self._group = models.ChatGroup.objects.get(pk=group_id)
+        return self._group
+
+    def add_back_button(self):
+        if hasattr(self, "_group"):
+            # Nowhere to back
+            return
+        if self._group.parent_group_id is not None:
+            self.add_button(
+                _("Back"),
+                "ChatGroupsReply",
+                args=self._group.parent_group_id
+            )
+
+    def add_cancel_button(self):
+        self.add_button(
+            _("Cancel"),
+            app_name="main",
+            reply_name="StartReply"
+        )
+
+
 class ChatGroupsReply(CallbackInlineReplyBuilder):
     USING_ARGS = (
         'group_id'
     )
 
     def build(self):
-        if self._is_group_id_set():
+        if self.is_group_id_set():
             if self._has_child_groups():
                 self._add_child_groups_buttons()
+                self.add_back_button()
             else:
                 return self.redirect(
                     "GroupSubsReply",
-                    args=self._get_group_id()
+                    args=self.get_group_id()
                 )
         else:
             self._add_top_groups_buttons()
 
-        self.add_button(
-            _("Back"),
-            app_name="main",
-            reply_name="StartReply"
-        )
+        self.add_cancel_button()
 
         text = _(
             "Choose chat group: "
@@ -59,24 +93,11 @@ class ChatGroupsReply(CallbackInlineReplyBuilder):
             reply_markup=self.markup
         )  
 
-    def _is_group_id_set(self):
-        return self._get_group_id() is not None
-
-    def _get_group_id(self) -> int:
-        group_id: str = int(self.callback.args[0]) if self.callback.args else None
-        return group_id
-
     def _has_child_groups(self):
-        group = self._get_group()
+        group = self.get_group()
         return group.child_groups is not None
 
-    def _get_group(self):
-        if not hasattr(self, "_group"):
-            group_id = self._get_group_id()
-            self._group = models.ChatGroup.objects.get(pk=group_id)
-        return self._group
-
-    def _add_buttons(self, groups):
+    def _add_group_buttons(self, groups):
         for group in groups:
             self.add_button(
                 group.name,
@@ -86,14 +107,14 @@ class ChatGroupsReply(CallbackInlineReplyBuilder):
 
     def _add_top_groups_buttons(self):
         groups = self._get_top_groups()
-        self._add_buttons(groups)
+        self._add_group_buttons(groups)
 
     def _add_child_groups_buttons(self):
         groups = self._get_child_groups()
-        self._add_buttons(groups)
+        self._add_group_buttons(groups)
 
     def _get_child_groups(self) -> list:
-        group_id = self._get_group_id()
+        group_id = self.get_group_id()
         parent_group = models.ChatGroup.objects.get(pk=group_id)
         groups = [group for group in parent_group.child_groups.all()]
         return groups
@@ -159,12 +180,8 @@ class GroupSubsReply(CallbackInlineReplyBuilder):
                 args=sub.id
             )
 
-        self.add_button(
-            _("Back"),
-            app_name="main",
-            reply_name="StartReply"
-        )
-
+        self.add_back_button()
+        self.add_cancel_button()
         return self.markup
 
 
