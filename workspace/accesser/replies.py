@@ -50,11 +50,14 @@ class GroupedSubsReplyBuilder(CallbackInlineReplyBuilder):
             self._group = models.ChatGroup.objects.get(pk=group_id)
         return self._group
 
-    def add_back_button(self, back_to_group_id: int):
+    def add_back_button(self):
+        group = self.get_group()
+        if group is None:
+            return
         self.add_button(
             _("Back"),
             reply_name="ChatGroupsReply",
-            args=back_to_group_id
+            args=group.parent_group_id
         )
 
     def add_cancel_button(self):
@@ -74,11 +77,9 @@ class ChatGroupsReply(GroupedSubsReplyBuilder):
         if self.is_group_id_set():
             if self._has_child_groups():
                 self._add_child_groups_buttons()
-                self.add_back_button(
-                    back_to_group_id=self.get_group().parent_group_id
-                )
+                self.add_back_button()
             else:
-                return self.redirect(
+                return self.router.redirect(
                     "GroupSubsReply",
                     args=self.get_group_id()
                 )
@@ -98,7 +99,7 @@ class ChatGroupsReply(GroupedSubsReplyBuilder):
 
     def _has_child_groups(self):
         group = self.get_group()
-        return group.child_groups is not None
+        return group.child_groups.exists()
 
     def _add_group_buttons(self, groups):
         for group in groups:
@@ -165,8 +166,7 @@ class GroupSubsReply(GroupedSubsReplyBuilder):
         )  
 
     def _get_subscriptions(self) -> list:
-        group_id = self.get_group_id()
-        group = models.ChatGroup.objects.get(pk=group_id)
+        group = self.get_group()
         subs = group._get_subscriptions()
         return subs
 
@@ -179,7 +179,7 @@ class GroupSubsReply(GroupedSubsReplyBuilder):
                 args=sub.id
             )
 
-        self.add_back_button(back_to_group_id=self.get_group_id())
+        self.add_back_button()
         self.add_cancel_button()
         return self.markup
 
