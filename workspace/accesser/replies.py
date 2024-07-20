@@ -36,25 +36,26 @@ class GroupedSubsReplyBuilder(CallbackInlineReplyBuilder):
         return self.get_group_id() is not None
 
     def get_group_id(self) -> int:
-        group_id: str = self.callback.args[0] if self.callback.args else None
-        return int(group_id)
+        group_id = int(self.callback.args[0]) if self.callback.args else None
+        return group_id
 
     def get_group(self):
-        if self._group is None:
+        if not hasattr(self, "_group"):
             group_id = self.get_group_id()
+            if group_id is None:
+                log.info(
+                    "Cannot get_group(): group_id does not set to ReplyBuilder"
+                )
+                return None
             self._group = models.ChatGroup.objects.get(pk=group_id)
         return self._group
 
-    def add_back_button(self):
-        if hasattr(self, "_group"):
-            # Nowhere to back
-            return
-        if self._group.parent_group_id is not None:
-            self.add_button(
-                _("Back"),
-                "ChatGroupsReply",
-                args=self._group.parent_group_id
-            )
+    def add_back_button(self, back_to_group_id: int):
+        self.add_button(
+            _("Back"),
+            reply_name="ChatGroupsReply",
+            args=back_to_group_id
+        )
 
     def add_cancel_button(self):
         self.add_button(
@@ -64,7 +65,7 @@ class GroupedSubsReplyBuilder(CallbackInlineReplyBuilder):
         )
 
 
-class ChatGroupsReply(CallbackInlineReplyBuilder):
+class ChatGroupsReply(GroupedSubsReplyBuilder):
     USING_ARGS = (
         'group_id'
     )
@@ -73,7 +74,9 @@ class ChatGroupsReply(CallbackInlineReplyBuilder):
         if self.is_group_id_set():
             if self._has_child_groups():
                 self._add_child_groups_buttons()
-                self.add_back_button()
+                self.add_back_button(
+                    back_to_group_id=self.get_group().parent_group_id
+                )
             else:
                 return self.redirect(
                     "GroupSubsReply",
@@ -135,7 +138,7 @@ class ChatGroupsReply(CallbackInlineReplyBuilder):
         return groups
 
 
-class GroupSubsReply(CallbackInlineReplyBuilder):
+class GroupSubsReply(GroupedSubsReplyBuilder):
     USING_ARGS = (
         'group_id'
     )
@@ -162,14 +165,10 @@ class GroupSubsReply(CallbackInlineReplyBuilder):
         )  
 
     def _get_subscriptions(self) -> list:
-        group_id = self._get_group_id()
+        group_id = self.get_group_id()
         group = models.ChatGroup.objects.get(pk=group_id)
         subs = group._get_subscriptions()
         return subs
-
-    def _get_group_id(self) -> int:
-        group_id: str = self.callback.args[0] if self.callback.args else None
-        return int(group_id)
 
     def _build_markup(self, subs: typing.List[models.Subscription]):
         # for sub in accesser.models.Subscription.objects.all():
@@ -180,7 +179,7 @@ class GroupSubsReply(CallbackInlineReplyBuilder):
                 args=sub.id
             )
 
-        self.add_back_button()
+        self.add_back_button(back_to_group_id=self.get_group_id())
         self.add_cancel_button()
         return self.markup
 
