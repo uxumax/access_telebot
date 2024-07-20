@@ -20,8 +20,9 @@ class ChatTypeChoices(models.TextChoices):
 class ChatGroupManager(models.Manager):
     def with_subscription(self):
         self.filter(
-            subscription_accesses__isnull=False
+            subscription_chat_accesses=False
         ).all()
+        return self
         
 
 class ChatGroup(models.Model):

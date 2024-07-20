@@ -63,15 +63,15 @@ class ChatGroupsReply(CallbackInlineReplyBuilder):
         return self._get_group_id() is not None
 
     def _get_group_id(self) -> int:
-        group_id: str = self.callback.args[0] if self.callback.args else None
-        return int(group_id)
+        group_id: str = int(self.callback.args[0]) if self.callback.args else None
+        return group_id
 
     def _has_child_groups(self):
         group = self._get_group()
         return group.child_groups is not None
 
     def _get_group(self):
-        if self._group is None:
+        if not hasattr(self, "_group"):
             group_id = self._get_group_id()
             self._group = models.ChatGroup.objects.get(pk=group_id)
         return self._group
@@ -80,7 +80,7 @@ class ChatGroupsReply(CallbackInlineReplyBuilder):
         for group in groups:
             self.add_button(
                 group.name,
-                "ChatGroupsReply",
+                reply_name="ChatGroupsReply",
                 args=group.id
             )
 
@@ -111,7 +111,7 @@ class ChatGroupsReply(CallbackInlineReplyBuilder):
             if group not in groups:
                 groups.append(group)
 
-        return group
+        return groups
 
 
 class GroupSubsReply(CallbackInlineReplyBuilder):
