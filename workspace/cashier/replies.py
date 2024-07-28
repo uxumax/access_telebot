@@ -46,34 +46,56 @@ class ChooseAccessDurationReply(BuildingInvoiceReplyBuilder):
     )
 
     def build(self):
-        subscription = accesser.models.Subscription.objects.get(
-            pk=self._get_subscription_id()
-        )
-        self._update_invoice(subscription)
+        self._set_subscription()
+        self._update_invoice()
 
-        if self.invoice.has_one_duration_only():
-            duration = subscription.durations.first()
-            return self.router.redirect(
-                "ChoosePayMethodReply",
-                args=duration.id
+        # if self.invoice.has_one_duration_only():
+        #     duration = subscription.durations.first()
+        #     return self.router.redirect(
+        #         "ChoosePayMethodReply",
+        #         args=duration.id
+        #     )
+
+        self.send_message(
+            _(
+                "{{subscription}}<br>"
+                "You will get access to this chats:<br>" 
+                "{{chat_list}}"
+            ).context(
+                subscription=self.subscription.name,
+                chat_list=self._get_chat_list_text()
             )
-
-        text = _(
-            "Choose access period for subscription {{subscription}}",
-        ).context(
-            subscription=subscription.name
         )
         self.send_message(
-            text,
+            _(
+                "Choose access period for subscription"
+            ),
             reply_markup=self._build_markup()
-        )  
+        )
+
+    def _set_subscription(self):
+        self.subscription = accesser.models.Subscription.objects.get(
+            pk=self._get_subscription_id()
+        )
 
     def _get_subscription_id(self):
         return int(self.callback.args[0])
 
-    def _update_invoice(self, subscription):
-        self.invoice.subscription = subscription
+    def _update_invoice(self):
+        self.invoice.subscription = self.subscription
         self.invoice.save()
+
+    def _get_chat_list_text(self) -> str:
+        groups = self.subscription.get_chat_groups()
+        text = ""
+        for group in groups:
+            text += f"<b>{group.name}</b><br>"
+            chats = group.get_all_child_chats()
+            for chat in chats:
+                text += f"{chat.title}<br>"
+            text += "<br>"
+        text += "<br>"
+        return text
 
     def _build_markup(self):
         durations = self.invoice.subscription.durations.all()
@@ -142,12 +164,12 @@ class ChoosePayMethodReply(BuildingInvoiceReplyBuilder):
                 reply_name="CheckoutReply",
                 args=slug
             )
-        if not self.invoice.has_one_duration_only():
-            self.add_button(
-                _("Back"),
-                reply_name="ChooseAccessDurationReply",
-                args=self.invoice.subscription.id           
-            )
+        # if not self.invoice.has_one_duration_only():
+        #     self.add_button(
+        #         _("Back"),
+        #         reply_name="ChooseAccessDurationReply",
+        #         args=self.invoice.subscription.id           
+        #     )
         self.add_button(
             _("Cancel"),
             reply_name="CryptoPayCancelReply"

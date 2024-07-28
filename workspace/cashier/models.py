@@ -110,8 +110,8 @@ class BuildingInvoice(TempModelAbstract):
     )
     expire_date = models.DateTimeField()
 
-    def has_one_duration_only(self):
-        return self.subscription.durations.count() == 1
+    # def has_one_duration_only(self):
+    #     return self.subscription.durations.count() == 1
 
     def save(self, *args, **kwargs):
         from . import signals

@@ -102,6 +102,11 @@ class Subscription(models.Model):
     def __str__(self):
         return f"({self.name})"
 
+    def get_chat_groups(self):
+        accesses: 'SubscriptionChatAccess' = self.access_to_chat_groups.all()
+        groups = [access.chat_group for access in accesses]
+        return groups
+
 
 class SubscriptionDurationPrice(models.Model):
     subscription = models.ForeignKey(
