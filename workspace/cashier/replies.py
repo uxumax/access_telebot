@@ -58,8 +58,8 @@ class ChooseAccessDurationReply(BuildingInvoiceReplyBuilder):
 
         self.send_message(
             _(
-                "{{subscription}}<br>"
-                "You will get access to this chats:<br>" 
+                "{{subscription}}\n"
+                "You will get access to this chats:\n" 
                 "{{chat_list}}"
             ).context(
                 subscription=self.subscription.name,
@@ -89,12 +89,12 @@ class ChooseAccessDurationReply(BuildingInvoiceReplyBuilder):
         groups = self.subscription.get_chat_groups()
         text = ""
         for group in groups:
-            text += f"<b>{group.name}</b><br>"
+            text += f"<b>{group.name}</b>\n"
             chats = group.get_all_child_chats()
             for chat in chats:
-                text += f"{chat.title}<br>"
-            text += "<br>"
-        text += "<br>"
+                text += f"{chat.title}\n"
+            text += "\n"
+        text += "\n"
         return text
 
     def _build_markup(self):
