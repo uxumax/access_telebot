@@ -44,14 +44,14 @@ class ChatGroup(models.Model):
     def __str__(self):
         return self.name
 
-    def get_all_child_chats(self) -> QuerySet:
+    def get_all_child_chats(self) -> "QuerySet(Chat)":
         """
-        Получает все чаты из текущей группы и ее дочерних групп рекурсивно.
+        Gets all child group chats recursively
         """
         chats = self.chats.all()
         for child_group in self.child_groups.all():
             chats = chats | child_group.get_all_child_chats()
-        return chats.distinct()
+        return chats.distinct().order_by('title')
 
     def get_top_parent(self) -> "ChatGroup":
         # Get parent recursively until parent=None

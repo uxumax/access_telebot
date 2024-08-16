@@ -88,12 +88,23 @@ class ChooseAccessDurationReply(BuildingInvoiceReplyBuilder):
         groups = self.subscription.get_chat_groups()
         text = ""
         for group in groups:
-            text += f"{group.name}\n"
-            chats = group.get_all_child_chats()
-            for chat in chats:
-                text += f"{chat.title}\n"
+            text += f"{group.name}\n\n"
+
+            # Sort by one child group level
+            if group.child_groups.count():
+                for child_group in group.child_groups.all():
+                    text += f"{child_group.name}\n"
+                    for chat in child_group.get_all_child_chats():
+                        text += f"{chat.title}\n"
+                    text += "\n"
+            else:
+                for chat in group.chats.all():
+                    text += f"{chat.title}\n"
+                text += "\n"
+
+            # Add space after every group
             text += "\n"
-        text += "\n"
+
         return text
 
     def _build_markup(self):
