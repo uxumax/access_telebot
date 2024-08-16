@@ -1,16 +1,13 @@
 from django.core.management.base import BaseCommand
 import main.models
 import main.workers
-# from access_telebot.serveo_tunnel_maker import ServeoTunnelMaker
-# import main.bot
+from main.workers.webhook_tunneler import ReverseTelegramWebhooker as webhooker 
 
 
 class Command(BaseCommand):
     help = "Setup webhook manually"
 
     def handle(self, *args, **options):
-        webhooker = main.workers.TelegramWebhooker
-        
         url = webhooker.get_current_webhook_url()
         if url is not None:
             if webhooker.is_webhook_working(url):
