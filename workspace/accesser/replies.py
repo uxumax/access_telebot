@@ -367,7 +367,7 @@ class GiveInviteLinksReply(CallbackInlineReplyBuilder):
         start_date = timezone.now()
         end_date = start_date + duration
         accesses = []
-        for access in subscription.access_to_chat_groups.all():
+        for access in subscription.access_to_chat_group.all():
             access = models.CustomerChatAccess.objects.create(
                 customer=self.customer,
                 chat_group=access.chat_group,

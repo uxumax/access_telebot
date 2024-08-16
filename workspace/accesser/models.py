@@ -20,7 +20,7 @@ class ChatTypeChoices(models.TextChoices):
 class ChatGroupManager(models.Manager):
     def with_subscription(self):
         self.filter(
-            subscription_chat_accesses=False
+            subscription_chat_access=False
         ).all()
         return self
         
@@ -60,10 +60,13 @@ class ChatGroup(models.Model):
         return self.parent_group.get_top_parent()
 
     def _get_subscriptions(self) -> list:
-        accesses = self.subscription_chat_accesses.all()
+        accesses = self.subscription_chat_access.all()
         subs = [a.subscription for a in accesses]
         return subs
-            
+
+    def has_subscription(self) -> bool:
+        return self.subscription_chat_access.exists() 
+
 
 class CustomerAccessRevokerWorkerStat(main.models.WorkerStatAbstract):
     """Worker stat model"""
@@ -102,10 +105,9 @@ class Subscription(models.Model):
     def __str__(self):
         return f"({self.name})"
 
-    def get_chat_groups(self):
-        accesses: 'SubscriptionChatAccess' = self.access_to_chat_groups.all()
-        groups = [access.chat_group for access in accesses]
-        return groups
+    def get_chat_group(self):
+        access: 'SubscriptionChatAccess' = self.access_to_chat_group
+        return access.chat_group 
 
 
 class SubscriptionDurationPrice(models.Model):
@@ -151,15 +153,15 @@ class SubscriptionDurationPrice(models.Model):
 
 
 class SubscriptionChatAccess(models.Model):
-    subscription = models.ForeignKey(
+    subscription = models.OneToOneField(
         Subscription,
         on_delete=models.CASCADE,
-        related_name="access_to_chat_groups",
+        related_name="access_to_chat_group",
     )
-    chat_group = models.ForeignKey(
+    chat_group = models.OneToOneField(
         ChatGroup,
         on_delete=models.CASCADE,
-        related_name="subscription_chat_accesses"
+        related_name="subscription_chat_access"
     )
 
 
