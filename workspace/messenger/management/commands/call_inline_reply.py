@@ -25,14 +25,17 @@ class Command(BaseCommand):
         customer = self._get_customer(_customer_id)
         app_name = options['app_name']
         reply_name = options['reply_name']
+
         if _args_line is not None:
-            args = self._split_args(_args_line)
+            reply_args = self._split_args(_args_line)
+        else:
+            reply_args = []
         
         build_callback_inline_reply(
             customer,
             app_name=app_name,
             reply_name=reply_name,
-            args=args,
+            args=reply_args
         )
 
         print("Callback Reply has been called")
