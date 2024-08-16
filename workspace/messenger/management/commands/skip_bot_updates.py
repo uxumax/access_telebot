@@ -4,6 +4,7 @@ import telebot
 import requests
 
 from main.workers import webhook_tunneler
+import main.models
 
 
 class Command(BaseCommand):
@@ -21,8 +22,6 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('Successfully cleared all bot updates.'))
 
     def _get_webhook_url(self) -> str:
-        webhook_host = settings.TELEBOT_WEBHOOK["host"]
-        webhooker = webhook_tunneler.DomainTelegramWebhooker(webhook_host)
-        webhook_url = webhooker.get_webhook_url()
-        return webhook_url
+        webhook = main.models.TelegramWebhook.load()
+        return webhook.url
 
