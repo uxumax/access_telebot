@@ -128,7 +128,7 @@ class ChatGroupsReply(GroupedSubsReplyBuilder):
         groups_with_sub = models.ChatGroup.objects.with_subscription().all()
         for group_ws in groups_with_sub:
 
-            if group_ws.parent_group:
+            if group_ws.parent_group and not group_ws.is_top:
                 group = group_ws.get_top_parent()
             else:
                 group = group_ws

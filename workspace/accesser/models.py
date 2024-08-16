@@ -40,6 +40,7 @@ class ChatGroup(models.Model):
         blank=True
     )
     objects = ChatGroupManager()
+    is_top = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
