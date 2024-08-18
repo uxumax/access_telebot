@@ -1,3 +1,6 @@
+from time import sleep
+from requests.exceptions import ConnectionError
+
 from access_telebot.logger import get_logger
 import telebot
 
@@ -43,19 +46,32 @@ class Worker(core.Worker):
 
             if chat.title != tg_chat.title:
                 log.info(
-                    "Changing Chat.title {chat.title} to {tg_chat.title}"
+                    f"Changing Chat.title {chat.title} to {tg_chat.title}"
                 )
                 chat.title = tg_chat.title
                 chat.save()
 
-    @staticmethod
-    def _get_tg_chat(chat: models.Chat):
+            sleep(5)
+
+    @classmethod
+    def _get_tg_chat(cls, chat: models.Chat):
         try: 
             tg_chat = bot.get_chat(chat.chat_id)
             return tg_chat
         except telebot.apihelper.ApiTelegramException as e:
+            headers = e.result.headers
+            wait_sec = int(headers.get("Retry-After"))
+            if "Too Many Requests" in e.description:
+                log.warning(
+                    f"Too Many Requests. Wait {wait_sec} and try again"
+                )
+                sleep(wait_sec)
+                return cls._get_tg_chat(chat) 
             if "chat not found" in e.description:
                 return None
             raise
+        except ConnectionError:
+            sleep(self.beat_interval)
+            return cls._get_tg_chat()
 
 
