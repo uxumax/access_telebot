@@ -54,10 +54,17 @@ class SubscriptionReplyBuilder(CallbackInlineReplyBuilder):
         subscription = self.get_subscription()
         if subscription is None:
             return
+        if subscription.parent is None:
+            args = None # Show top subscriptions
+        elif subscription.parent.is_whole_only:
+            args = None # Show top subscriptions
+        else:
+            args = subscription.parent_id
+
         self.add_button(
             _("Back"),
             reply_name="ChooseSubscriptionReply",
-            args=subscription.parent_id
+            args=args
         )
 
     def add_cancel_button(self):
