@@ -48,6 +48,7 @@ class Chat(models.Model):
                 raise ValidationError({'invite_link': "Invalid URL."}) from e
 
 
+from collections import defaultdict
 class Subscription(models.Model):
     name = models.CharField(max_length=100)
     chats = models.ManyToManyField(
@@ -77,7 +78,7 @@ class Subscription(models.Model):
             child_chats = child.get_all_child_chats().distinct()
             if child_chats.exists():
                 chats = chats | child_chats
-        return chats.distinct().order_by('title')
+        return chats.distinct().order_by('subscriptions__name', 'title')
 
     def get_top_parent(self) -> "Subscription": 
         # Get parent recursively until parent=None
