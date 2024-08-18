@@ -59,4 +59,3 @@ class Worker(core.Worker):
             raise
 
 
-
