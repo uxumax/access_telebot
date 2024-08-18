@@ -10,6 +10,7 @@ from cashier.workers import (
 )
 from accesser.workers import (
     customer_access_revoker,
+    chat_updater,
 )
 
 

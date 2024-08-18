@@ -12,7 +12,10 @@ from cashier.workers import (
     invoice_expire_checker,
     invoice_confirm_checker,
 )
-from accesser.workers import customer_access_revoker
+from accesser.workers import (
+    customer_access_revoker,
+    chat_updater,
+)
 
 stop_event = Event()
 logging.basicConfig(
@@ -32,6 +35,7 @@ class Command(BaseCommand):
             invoice_expire_checker.Worker(),
             invoice_confirm_checker.Worker(),
             customer_access_revoker.Worker(),
+            chat_updater.Worker(),
         ]
         self.threads = []
 

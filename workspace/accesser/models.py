@@ -21,6 +21,10 @@ class CustomerAccessRevokerWorkerStat(main.models.WorkerStatAbstract):
     """Worker stat model"""
 
 
+class ChatUpdaterWorkerStat(main.models.WorkerStatAbstract):
+    """Worker stat model"""
+
+
 class Chat(models.Model):
     chat_id = models.BigIntegerField(primary_key=True)
     title = models.CharField(max_length=255)
