@@ -30,12 +30,12 @@ class StartCommandReply(CommandReplyBuilder):
         self.add_button(
             _("Plans"),
             app_name="accesser",
-            reply_name="ChatGroupsReply"
+            reply_name="ChooseSubscriptionReply"
         )
         self.add_button(
             _("My plan"),
             app_name="accesser",
-            reply_name="MySubsReply"
+            reply_name="MySubscriptionsReply"
         )
         return self.markup
 

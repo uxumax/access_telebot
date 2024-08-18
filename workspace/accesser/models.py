@@ -17,58 +17,6 @@ class ChatTypeChoices(models.TextChoices):
     GROUP = 'group', 'Group'
 
 
-class ChatGroupManager(models.Manager):
-    def with_subscription(self):
-        self.filter(
-            subscription_chat_access=False
-        ).all()
-        return self
-        
-
-class ChatGroup(models.Model):
-    name = models.CharField(max_length=255)
-    chats = models.ManyToManyField(
-        'Chat', 
-        related_name='chat_groups',
-        blank=True
-    )
-    parent_group = models.ForeignKey(
-        'self', 
-        on_delete=models.CASCADE, 
-        related_name='child_groups',
-        null=True, 
-        blank=True
-    )
-    objects = ChatGroupManager()
-    is_top = models.BooleanField(default=False)
-
-    def __str__(self):
-        return self.name
-
-    def get_all_child_chats(self) -> "QuerySet(Chat)":
-        """
-        Gets all child group chats recursively
-        """
-        chats = self.chats.all()
-        for child_group in self.child_groups.all():
-            chats = chats | child_group.get_all_child_chats()
-        return chats.distinct().order_by('title')
-
-    def get_top_parent(self) -> "ChatGroup":
-        # Get parent recursively until parent=None
-        if self.parent_group is None:
-            return self
-        return self.parent_group.get_top_parent()
-
-    def _get_subscriptions(self) -> list:
-        accesses = self.subscription_chat_access.all()
-        subs = [a.subscription for a in accesses]
-        return subs
-
-    def has_subscription(self) -> bool:
-        return self.subscription_chat_access.exists() 
-
-
 class CustomerAccessRevokerWorkerStat(main.models.WorkerStatAbstract):
     """Worker stat model"""
 
@@ -102,13 +50,40 @@ class Chat(models.Model):
 
 class Subscription(models.Model):
     name = models.CharField(max_length=100)
+    chats = models.ManyToManyField(
+        'Chat', 
+        related_name='subscriptions',
+        blank=True
+    )
+    parent = models.ForeignKey(
+        'self', 
+        on_delete=models.CASCADE, 
+        related_name='childs',
+        null=True, 
+        blank=True
+    )
+    is_top = models.BooleanField(default=False)
+    is_whole_only = models.BooleanField(default=False)
 
     def __str__(self):
         return f"({self.name})"
 
-    def get_chat_group(self):
-        access: 'SubscriptionChatAccess' = self.access_to_chat_group
-        return access.chat_group 
+    def get_all_child_chats(self) -> "QuerySet(Chat)":
+        """
+        Gets all child group chats recursively
+        """
+        chats = self.chats.all().distinct()
+        for child in self.childs.all():
+            child_chats = child.get_all_child_chats().distinct()
+            if child_chats.exists():
+                chats = chats | child_chats
+        return chats.distinct().order_by('title')
+
+    def get_top_parent(self) -> "Subscription": 
+        # Get parent recursively until parent=None
+        if self.parent is None:
+            return self
+        return self.parent.get_top_parent()
 
 
 class SubscriptionDurationPrice(models.Model):
@@ -153,25 +128,8 @@ class SubscriptionDurationPrice(models.Model):
         return ", ".join(parts) if parts else _("less than a minute")
 
 
-class SubscriptionChatAccess(models.Model):
-    subscription = models.OneToOneField(
-        Subscription,
-        on_delete=models.CASCADE,
-        related_name="access_to_chat_group",
-    )
-    chat_group = models.OneToOneField(
-        ChatGroup,
-        on_delete=models.CASCADE,
-        related_name="subscription_chat_access"
-    )
-
-
 class CustomerChatAccess(models.Model):
     customer = models.ForeignKey(main.models.Customer, on_delete=models.CASCADE)
-    chat_group = models.ForeignKey(
-        ChatGroup,
-        on_delete=models.CASCADE,
-    )
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
     subscription = models.ForeignKey(

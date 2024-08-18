@@ -4,11 +4,6 @@ from . import forms
 from . import models
 
 
-class SubscriptionChatAccessInline(admin.TabularInline):
-    model = models.SubscriptionChatAccess
-    extra = 1  # Количество пустых форм для новых записей
-
-
 class CustomerChatAccessInline(admin.TabularInline):
     model = models.CustomerChatAccess
     extra = 1  # Количество пустых форм для новых записей
@@ -21,17 +16,6 @@ class SubscriptionDurationPriceInline(admin.TabularInline):
     fields = ('duration', 'price')
 
     extra = 1  # Количество пустых форм для новых записей
-
-
-@admin.register(models.ChatGroup)
-class ChatGroupAdmin(admin.ModelAdmin):
-    list_display = ('name', 'display_chats')
-    search_fields = ('name',)
-    filter_horizontal = ('chats',)
-
-    def display_chats(self, obj):
-        return ", ".join([chat.title for chat in obj.chats.all()])
-    display_chats.short_description = 'Chats'
 
 
 @admin.register(models.Chat)
@@ -52,15 +36,12 @@ class ChatAdmin(admin.ModelAdmin):
 
 @admin.register(models.Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
-    list_display = (
-        'name', 
-        'durations_display',
-    )
+    list_display = ('name', 'display_chats', "durations_display")
     list_filter = ('name',)
     search_fields = ('name',)
+    filter_horizontal = ('chats',)
     inlines = [
         SubscriptionDurationPriceInline,
-        SubscriptionChatAccessInline,
     ]
 
     def durations_display(self, obj):
@@ -73,5 +54,8 @@ class SubscriptionAdmin(admin.ModelAdmin):
             text_list += row
         return mark_safe(text_list)  # Mark the output as safe HTML content
 
+    def display_chats(self, obj):
+        return ", ".join([chat.title for chat in obj.chats.all()])
+    display_chats.short_description = 'Chats'
 
 

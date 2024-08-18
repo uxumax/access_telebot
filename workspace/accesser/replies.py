@@ -4,6 +4,7 @@ from django.utils import timezone
 from access_telebot.settings import TELEBOT_KEY
 from access_telebot.logger import get_logger
 from telebot import TeleBot
+from django.db.models import Q
 
 # import main.models
 from . import models
@@ -21,43 +22,42 @@ log = get_logger(__name__)
 
 
 CallbackInlineReply = typing.Union[
-    'ChatGroupsReply',
-    'GroupSubsReply',
-    'MySubsReply',
+    'ChooseSubscriptionReply',
+    'MySubscriptionsReply',
 ]
 
 
-class GroupedSubsReplyBuilder(CallbackInlineReplyBuilder):
+class SubscriptionReplyBuilder(CallbackInlineReplyBuilder):
     USING_ARGS = (
-        'group_id'
+        'subscription_id'
     )
 
-    def is_group_id_set(self):
-        return self.get_group_id() is not None
+    def is_subscription_id_set(self):
+        return self.get_subscription_id() is not None
 
-    def get_group_id(self) -> int:
-        group_id = int(self.callback.args[0]) if self.callback.args else None
-        return group_id
+    def get_subscription_id(self) -> int:
+        subscription_id = int(self.callback.args[0]) if self.callback.args else None
+        return subscription_id
 
-    def get_group(self):
-        if not hasattr(self, "_group"):
-            group_id = self.get_group_id()
-            if group_id is None:
-                log.info(
-                    "Cannot get_group(): group_id does not set to ReplyBuilder"
+    def get_subscription(self):
+        if not hasattr(self, "_subscription"):
+            subscription_id = self.get_subscription_id()
+            if subscription_id is None:
+                log.debug(
+                    "Cannot get_subscription(): subscription_id does not set to ReplyBuilder"
                 )
                 return None
-            self._group = models.ChatGroup.objects.get(pk=group_id)
-        return self._group
+            self._subscription = models.Subscription.objects.get(pk=subscription_id)
+        return self._subscription
 
     def add_back_button(self):
-        group = self.get_group()
-        if group is None:
+        subscription = self.get_subscription()
+        if subscription is None:
             return
         self.add_button(
             _("Back"),
-            reply_name="ChatGroupsReply",
-            args=group.parent_group_id
+            reply_name="ChooseSubscriptionReply",
+            args=subscription.parent_id
         )
 
     def add_cancel_button(self):
@@ -68,28 +68,31 @@ class GroupedSubsReplyBuilder(CallbackInlineReplyBuilder):
         )
 
 
-class ChatGroupsReply(GroupedSubsReplyBuilder):
+class ChooseSubscriptionReply(SubscriptionReplyBuilder):
     USING_ARGS = (
-        'group_id'
+        'subscription_id'
     )
 
     def build(self):
-        if self.is_group_id_set():
-            if self._has_child_groups():
-                self._add_child_groups_buttons()
+        if self.is_subscription_id_set():
+            subscription = self.get_subscription()
+            if subscription.childs.exists() and not subscription.is_whole_only:
+                self._add_subscriptions_buttons(subscription.childs.all())
+                self._add_all_childs_button(subscription)
                 self.add_back_button()
             else:
                 return self.router.redirect(
-                    "GroupSubsReply",
-                    args=self.get_group_id()
+                    app_name="cashier", 
+                    reply_name="ChooseAccessDurationReply",
+                    args=subscription.id
                 )
         else:
-            self._add_top_groups_buttons()
+            self._add_top_subscriptions_buttons()
 
         self.add_cancel_button()
 
         text = _(
-            "Choose chat group: "
+            "Choose chat subscription: "
         )
 
         self.send_message(
@@ -97,94 +100,48 @@ class ChatGroupsReply(GroupedSubsReplyBuilder):
             reply_markup=self.markup
         )  
 
-    def _has_child_groups(self):
-        group = self.get_group()
-        return group.child_groups.exists()
-
-    def _add_group_buttons(self, groups):
-        for group in groups:
-            self.add_button(
-                group.name,
-                reply_name="ChatGroupsReply",
-                args=group.id
-            )
-
-    def _add_top_groups_buttons(self):
-        groups = self._get_top_groups()
-        self._add_group_buttons(groups)
-
-    def _add_child_groups_buttons(self):
-        groups = self._get_child_groups()
-        self._add_group_buttons(groups)
-
-    def _get_child_groups(self) -> list:
-        group_id = self.get_group_id()
-        parent_group = models.ChatGroup.objects.get(pk=group_id)
-        groups = [group for group in parent_group.child_groups.all()]
-        return groups
-
-    def _get_top_groups(self) -> list:
-        groups = []
-        groups_with_sub = models.ChatGroup.objects.with_subscription().all()
-        for group_ws in groups_with_sub:
-
-            if group_ws.parent_group and not group_ws.is_top:
-                group = group_ws.get_top_parent()
-            else:
-                group = group_ws
-
-            if group not in groups:
-                groups.append(group)
-
-        return groups
-
-
-class GroupSubsReply(GroupedSubsReplyBuilder):
-    USING_ARGS = (
-        'group_id'
-    )
-
-    def build(self):
-        subs: typing.List[models.Subscription] = self._get_subscriptions()
-        if not subs:
-            text = _(
-                "Do not have any subscriptions for this group"
-            )
-            return self.router.redirect(
-                app_name="main",
-                reply_name="StartCommandReply",
-                reply_type="COMMAND"
-            )
-
-        text = _(
-            "Choose subscription: "
-        )
-
-        self.send_message(
-            text,
-            reply_markup=self._build_markup(subs)
-        )  
-
-    def _get_subscriptions(self) -> list:
-        group = self.get_group()
-        subs = group._get_subscriptions()
-        return subs
-
-    def _build_markup(self, subs: typing.List[models.Subscription]):
-        # for sub in accesser.models.Subscription.objects.all():
-        for sub in subs:
+    def _add_subscriptions_buttons(self, subscriptions):
+        for sub in subscriptions:
             self.add_button(
                 sub.name,
-                "cashier", "ChooseAccessDurationReply",
+                reply_name="ChooseSubscriptionReply",
                 args=sub.id
             )
 
-        self.add_back_button()
-        self.add_cancel_button()
-        return self.markup
+    def _add_all_childs_button(self, subscription):
+        self.add_button(
+            _("Choose all"),
+            app_name="cashier",
+            reply_name="ChooseAccessDurationReply",
+            args=subscription.id
+        )
+
+    def _add_top_subscriptions_buttons(self):
+        subscriptions = self._get_top_subscriptions()
+        self._add_subscriptions_buttons(subscriptions)
+
+    def _get_top_subscriptions(self) -> list:
+        top_subs = []
+        subscriptions = models.Subscription.objects.filter(
+            Q(
+                parent_id__isnull=True
+            ) | Q(
+                is_top=True
+            )
+        ).all()
+
+        for sub in subscriptions:
+            if sub.parent and not sub.is_top:
+                top_sub = sub.get_top_parent()
+            else:
+                top_sub = sub 
+            if top_sub not in top_subs:
+                top_subs.append(top_sub)
+
+        return top_subs
 
 
-class MySubsReply(CallbackInlineReplyBuilder):
+class MySubscriptionsReply(CallbackInlineReplyBuilder):
     def build(self):
         self.customer_chat_accesses = models.CustomerChatAccess.objects.filter(
             customer=self.customer
@@ -244,7 +201,7 @@ class MySubsReply(CallbackInlineReplyBuilder):
         text = Text("")
         unique_chats = []
         for access in self.customer_chat_accesses:
-            for chat in access.chat_group.get_all_child_chats():
+            for chat in access.subscription.get_all_child_chats():
                 # Clear all dublicates from two different sub with same chats
                 if chat not in unique_chats:
                     invite_link = access.invite_links.filter(chat=chat).first()
@@ -287,12 +244,12 @@ class GiveInviteLinksReply(CallbackInlineReplyBuilder):
                 )
             )
 
-        customer_chat_accesses = self._assign_subscription_access(
+        customer_chat_access = self._assign_subscription_access(
             invoice.subscription, 
             invoice.duration.duration,        
         )
         
-        invite_links = self._get_invite_links(customer_chat_accesses)
+        invite_links = self._get_invite_links(customer_chat_access)
         invite_links_text = self._get_invite_links_str(invite_links)
         self.send_message(
             _(
@@ -318,7 +275,7 @@ class GiveInviteLinksReply(CallbackInlineReplyBuilder):
         invoice.save()
         
         return self.router.redirect(
-            "MySubsReply"
+            "MySubscriptionsReply"
         )
 
     def _get_invoice(self):
@@ -366,34 +323,27 @@ class GiveInviteLinksReply(CallbackInlineReplyBuilder):
     ) -> None:
         start_date = timezone.now()
         end_date = start_date + duration
-        accesses = []
-        for access in subscription.access_to_chat_group.all():
-            access = models.CustomerChatAccess.objects.create(
-                customer=self.customer,
-                chat_group=access.chat_group,
-                start_date=start_date,
-                end_date=end_date,
-                subscription=subscription,
-                active=True,
-            )
-            accesses.append(access)
-        return accesses
+        access = models.CustomerChatAccess.objects.create(
+            customer=self.customer,
+            start_date=start_date,
+            end_date=end_date,
+            subscription=subscription,
+            active=True,
+        )
+        return access
 
     def _get_invite_links(
         self,
-        customer_chat_accesses: typing.List[
-            models.CustomerChatAccess,
-        ]
+        access: models.CustomerChatAccess,
     ) -> list:
         links = []
-        for access in customer_chat_accesses:
-            for chat in access.chat_group.chats.all():
-                link = self._create_invite_link(
-                    access, chat
-                ) 
-                links.append(
-                    (chat.title, link)
-                )
+        for chat in access.subscription.chats.all():
+            link = self._create_invite_link(
+                access, chat
+            ) 
+            links.append(
+                (chat.title, link)
+            )
         return links
 
     def _create_invite_link(
@@ -490,7 +440,7 @@ class RevokeAccessNotificationReply(CallbackInlineReplyBuilder):
         revoked_access: models.CustomerChatAccess
     ) -> str:
         text = Text("")
-        for chat in revoked_access.chat_group.chats.all():
+        for chat in revoked_access.subscription.chats.all():
             row: Text = _(
                 "-- {{chat_title}}\n"
             ).context(

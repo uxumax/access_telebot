@@ -85,25 +85,19 @@ class ChooseAccessDurationReply(BuildingInvoiceReplyBuilder):
         self.invoice.save()
 
     def _get_chat_list_text(self) -> str:
-        groups = self.subscription.get_chat_groups()
         text = ""
-        for group in groups:
-            text += f"{group.name}\n\n"
+        text += f"{self.subscription.name}\n\n"
 
-            # Sort by one child group level
-            if group.child_groups.count():
-                for child_group in group.child_groups.all():
-                    text += f"{child_group.name}\n"
-                    for chat in child_group.get_all_child_chats():
-                        text += f"{chat.title}\n"
-                    text += "\n"
-            else:
-                for chat in group.chats.all():
+        # Sort by one child subscription level
+        if self.subscription.childs.count():
+            for child in self.subscription.childs.all():
+                text += f"{child.name}\n"
+                for chat in child.get_all_child_chats():
                     text += f"{chat.title}\n"
                 text += "\n"
-
-            # Add space after every group
-            text += "\n"
+        else:
+            for chat in self.subscription.chats.all():
+                text += f"{chat.title}\n"
 
         return text
 
@@ -123,7 +117,7 @@ class ChooseAccessDurationReply(BuildingInvoiceReplyBuilder):
         self.add_button(
             _("Back"),
             app_name="accesser",
-            reply_name="ChatGroupsReply"
+            reply_name="ChooseSubscriptionReply"
         )
         return self.markup    
 

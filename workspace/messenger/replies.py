@@ -62,7 +62,6 @@ class Translator:
         text: str, 
     ) -> Text:
         text = text.replace("\n", "\\n")
-        print(f"'{text}'")
         translation = self._get_translation(text)\
             if settings.TRANSLATION is not None else text
         return Text(translation)

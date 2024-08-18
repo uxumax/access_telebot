@@ -13,13 +13,10 @@ class CallbackInlineRouter(CallbackInlineRouterBase):
     def route(self):
         _is = self.is_reply_name
 
-        if _is("ChatGroupsReply"):
-            return self.build_reply(replies.ChatGroupsReply)
+        if _is("ChooseSubscriptionReply"):
+            return self.build_reply(replies.ChooseSubscriptionReply)
 
-        if _is("GroupSubsReply"):
-            return self.build_reply(replies.GroupSubsReply)
-
-        if _is("MySubsReply"):
+        if _is("MySubscriptionsReply"):
             return self.build_reply(replies.MySubsReply)
 
         if _is("GiveInviteLinksReply"):
