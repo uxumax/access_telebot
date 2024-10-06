@@ -52,6 +52,7 @@ class CustomerAdmin(admin.ModelAdmin):
     )
     inlines = [
         accesser.admin.CustomerChatAccessInline,
+        accesser.admin.CustomerInviteLinkInline,
         BuildingInvoiceInline,
     ]
 

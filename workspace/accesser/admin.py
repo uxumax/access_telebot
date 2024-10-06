@@ -6,7 +6,21 @@ from . import models
 
 class CustomerChatAccessInline(admin.TabularInline):
     model = models.CustomerChatAccess
-    extra = 1  # Количество пустых форм для новых записей
+    extra = 0
+
+
+class CustomerInviteLinkInline(admin.TabularInline):
+    model = models.InviteLink
+    extra = 0
+    fields = [
+        "chat",
+        "url",
+        "expire_date",
+    ]  
+
+    # readonly_fields = []  
+    def get_readonly_fields(self, request, obj=None):
+        return [field.name for field in self.model._meta.fields]
 
 
 class SubscriptionDurationPriceInline(admin.TabularInline):
