@@ -154,86 +154,111 @@ class MySubscriptionsReply(CallbackInlineReplyBuilder):
             customer=self.customer
         ).all()
         
-        if self.customer_chat_accesses:
-            text = self._get_text()
-        else:
-            text = _(
-                "Sorry, you don't have an active plan right now"
+        if not self.customer_chat_accesses:
+            self.send_message(
+                _(
+                    "Sorry, you don't have an active plan right now"
+                )
             )
+            return
 
         self.send_message(
-            text,
+            _(
+                "You have these subscriptions: \n"
+                "{{subs_list}}"
+            ).context(
+                subs_list=self._get_subscription_list_str()
+            ),
             reply_markup=self._build_markup()
         )  
+        # self.send_message(
+        #     _(
+        #         "You have access to chat/channels: \n"
+        #         "{{access_list}}"
+        #     ).context(
+        #         access_list=self._get_customer_access_chat_list_str()
+        #     ),
+        #     reply_markup=self._build_markup()
+        # )  
 
     def _build_markup(self):
-        # payments buttons
-
-        return None  # self.markup
+        self.add_button(
+            _("Back"),
+            app_name="main",
+            reply_name="StartReply"
+        )
+        return self.markup
  
-    def _get_text(self):
-        text = _(
-            "You have these subscriptions: \n"
-            "{{subs_list}}"
-        ).context(
-            subs_list=self._get_subscription_list_str()
-        )
-        text += "\n\n"
-        text += _(
-            "You have access to chat/channels: \n"
-            "{{access_list}}"
-        ).context(
-            access_list=self._get_customer_access_chat_list_str()
-        )
-        return text
+    # def _get_text(self):
+    #     text = _(
+    #         "You have these subscriptions: \n"
+    #         "{{subs_list}}"
+    #     ).context(
+    #         subs_list=self._get_subscription_list_str()
+    #     )
+    #     text += "\n\n"
+    #     text += _(
+    #         "You have access to chat/channels: \n"
+    #         "{{access_list}}"
+    #     ).context(
+    #         access_list=self._get_customer_access_chat_list_str()
+    #     )
+    #     return text
 
     def _get_subscription_list_str(self) -> str:
         text = Text("")
-        for subs in self._get_subscription_list():
+        # for subs in self._get_subscription_list():
+        for access in self.customer_chat_accesses:
             text += _(
                 "{{subs_name}}\n"
+                "Access to {{chat_count}} channel/chats\n"
+                "{{start_date}} | {{end_date}}\n\n"
             ).context(
-                subs_name=subs.name
+                subs_name=access.subscription.name,
+                chat_count=access.subscription.get_all_child_chats().count(),
+                start_date=access.start_date.strftime("%d-%m-%Y %H:%M"),
+                end_date=access.end_date.strftime("%d-%m-%Y %H:%M")
             )
         return text.load()
 
-    def _get_subscription_list(self) -> list:
-        subs_list = []
-        for access in self.customer_chat_accesses:
-            if access.subscription not in subs_list:
-                subs_list.append(access.subscription)
-        return subs_list
+    # def _get_subscription_list(self) -> list:
+    #     subs_list = []
+    #     for access in self.customer_chat_accesses:
+    #         if access.subscription not in subs_list:
+    #             subs_list.append(access.subscription)
+    #     return subs_list
 
-    def _get_customer_access_chat_list_str(self) -> str:
-        text = Text("")
-        unique_chats = []
-        for access in self.customer_chat_accesses:
-            for chat in access.subscription.get_all_child_chats():
-                # Clear all dublicates from two different sub with same chats
-                if chat not in unique_chats:
-                    invite_link = access.invite_links.filter(chat=chat).first()
-                    unique_chats.append(
-                        (
-                            chat,
-                            # invite_link.url if invite_link is not None else None,
-                            getattr(invite_link, "url", None),
-                            access.end_date,
-                        )
-                    )
+    # def _get_customer_access_chat_list_str(self) -> str:
+    #     text = Text("")
+    #     unique_chats = []
+    #     for access in self.customer_chat_accesses:
+    #         for chat in access.subscription.get_all_child_chats():
+    #             # Clear all dublicates from two different sub with same chats
+    #             if chat not in unique_chats:
+    #                 invite_link = access.invite_links.filter(chat=chat).first()
+    #                 unique_chats.append(
+    #                     (
+    #                         chat,
+    #                         # invite_link.url if invite_link is not None else None,
+    #                         getattr(invite_link, "url", None),
+    #                         access.end_date,
+    #                     )
+    #                 )
 
-        for chat, invite_link, end_date in unique_chats:
-            text += _(
-                "{{chat_title}}\n"
-                "{{invite_link}}\n"
-                "Until {{date}}\n"
-                "--------"
-            ).context(
-                chat_title=chat.title,
-                invite_link=invite_link,
-                date=end_date
-            )
-            text += "\n"
-        return text.load() 
+    #     for chat, invite_link, end_date in unique_chats:
+    #         text += _(
+    #             "{{chat_title}}\n"
+    #             "{{invite_link}}\n"
+    #             "Until {{date}}\n"
+    #             "--------"
+    #         ).context(
+    #             chat_title=chat.title,
+    #             invite_link=invite_link,
+    #             date=end_date
+    #         )
+    #         text += "\n"
+
+    #     return text.load() 
 
 
 class GiveInviteLinksReply(CallbackInlineReplyBuilder):
@@ -344,7 +369,8 @@ class GiveInviteLinksReply(CallbackInlineReplyBuilder):
         access: models.CustomerChatAccess,
     ) -> list:
         links = []
-        for chat in access.subscription.chats.all():
+        # for chat in access.subscription.chats.all():
+        for chat in access.subscription.get_all_child_chats():
             link = self._create_invite_link(
                 access, chat
             ) 
