@@ -22,6 +22,9 @@ class CallbackInlineRouter(CallbackInlineRouterBase):
         if _is("GiveInviteLinksReply"):
             return self.build_reply(replies.GiveInviteLinksReply)
 
+        if _is("RemindInviteLinksReply"):
+            return self.build_reply(replies.RemindInviteLinksReply)
+
         if _is("RevokeAccessNotificationReply"):
             return self.build_reply(replies.RevokeAccessNotificationReply)
 

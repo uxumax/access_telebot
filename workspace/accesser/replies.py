@@ -171,17 +171,12 @@ class MySubscriptionsReply(CallbackInlineReplyBuilder):
             ),
             reply_markup=self._build_markup()
         )  
-        # self.send_message(
-        #     _(
-        #         "You have access to chat/channels: \n"
-        #         "{{access_list}}"
-        #     ).context(
-        #         access_list=self._get_customer_access_chat_list_str()
-        #     ),
-        #     reply_markup=self._build_markup()
-        # )  
 
     def _build_markup(self):
+        self.add_button(
+            _("Get invite links"),
+            reply_name="RemindInviteLinksReply"
+        )
         self.add_button(
             _("Back"),
             app_name="main",
@@ -189,22 +184,6 @@ class MySubscriptionsReply(CallbackInlineReplyBuilder):
         )
         return self.markup
  
-    # def _get_text(self):
-    #     text = _(
-    #         "You have these subscriptions: \n"
-    #         "{{subs_list}}"
-    #     ).context(
-    #         subs_list=self._get_subscription_list_str()
-    #     )
-    #     text += "\n\n"
-    #     text += _(
-    #         "You have access to chat/channels: \n"
-    #         "{{access_list}}"
-    #     ).context(
-    #         access_list=self._get_customer_access_chat_list_str()
-    #     )
-    #     return text
-
     def _get_subscription_list_str(self) -> str:
         text = Text("")
         # for subs in self._get_subscription_list():
@@ -221,47 +200,79 @@ class MySubscriptionsReply(CallbackInlineReplyBuilder):
             )
         return text.load()
 
-    # def _get_subscription_list(self) -> list:
-    #     subs_list = []
-    #     for access in self.customer_chat_accesses:
-    #         if access.subscription not in subs_list:
-    #             subs_list.append(access.subscription)
-    #     return subs_list
 
-    # def _get_customer_access_chat_list_str(self) -> str:
-    #     text = Text("")
-    #     unique_chats = []
-    #     for access in self.customer_chat_accesses:
-    #         for chat in access.subscription.get_all_child_chats():
-    #             # Clear all dublicates from two different sub with same chats
-    #             if chat not in unique_chats:
-    #                 invite_link = access.invite_links.filter(chat=chat).first()
-    #                 unique_chats.append(
-    #                     (
-    #                         chat,
-    #                         # invite_link.url if invite_link is not None else None,
-    #                         getattr(invite_link, "url", None),
-    #                         access.end_date,
-    #                     )
-    #                 )
+class InviteLinkSendReplyBuilder(CallbackInlineReplyBuilder):
+    def send_invite_links(
+        self, 
+        links: typing.List[
+            typing.Tuple[str, str]
+        ]
+    ):
+        text = Text("")
+        for i, (chat_title, link) in enumerate(links):
+            text += _(
+                "-- {{chat_title}} - {{link}}\n"
+            ).context(
+                chat_title=chat_title,
+                link=link
+            )
 
-    #     for chat, invite_link, end_date in unique_chats:
-    #         text += _(
-    #             "{{chat_title}}\n"
-    #             "{{invite_link}}\n"
-    #             "Until {{date}}\n"
-    #             "--------"
-    #         ).context(
-    #             chat_title=chat.title,
-    #             invite_link=invite_link,
-    #             date=end_date
-    #         )
-    #         text += "\n"
-
-    #     return text.load() 
+            # Send links no more than 10 pcs in a message
+            if (i + 1) % 10 == 0 or i == len(links) - 1:
+                self.send_message(
+                    text.load()
+                )
+                text = Text("")  # Reset text for the next batch
 
 
-class GiveInviteLinksReply(CallbackInlineReplyBuilder):
+class RemindInviteLinksReply(InviteLinkSendReplyBuilder):
+    USING_ARGS = ()
+
+    def build(self):
+        self.customer_chat_accesses = models.CustomerChatAccess.objects.filter(
+            customer=self.customer
+        ).all()
+        
+        if not self.customer_chat_accesses:
+            self.send_message(
+                _(
+                    "Sorry, you don't have an active plan right now"
+                )
+            )
+            return
+
+        invite_links = self._get_invite_links()
+        self.send_invite_links(invite_links)
+        self.send_message(
+            "All links will be deactivated when subscription become expired",
+            reply_markup=self._build_markup()
+        )
+
+    def _get_invite_links(self) -> list:
+        unique_chats = []
+        for access in self.customer_chat_accesses:
+            for chat in access.subscription.get_all_child_chats():
+                # Clear all dublicates from two different sub with same chats
+                if chat not in unique_chats:
+                    invite_link = access.invite_links.filter(chat=chat).first()
+                    unique_chats.append(
+                        (
+                            chat.title,
+                            getattr(invite_link, "url", None),
+                        )
+                    )
+        return unique_chats
+
+    def _build_markup(self):
+        self.add_button(
+            _("Back"),
+            app_name="main",
+            reply_name="StartReply"
+        )
+        return self.markup
+
+
+class GiveInviteLinksReply(InviteLinkSendReplyBuilder):
     USING_ARGS = (
         "invoice_type_code",
         "confirmed_invoice_id",
@@ -282,19 +293,14 @@ class GiveInviteLinksReply(CallbackInlineReplyBuilder):
         )
         
         invite_links = self._get_invite_links(customer_chat_access)
-        invite_links_text = self._get_invite_links_str(invite_links)
         self.send_message(
-            _(
-                "Here are your invite links:\n"
-                "{{link_list}}"
-            ).context(
-                link_list=invite_links_text
-            )
+            "Here is your invite links"
         )
+        self.send_invite_links(invite_links)
 
         valid_until_date = (
             timezone.now() + invoice.duration.duration
-        ).strftime("%B %d, %Y %H:%M")
+        ).strftime("%d-%m-%Y %H:%M")
         self.send_message(
             _(
                 "All invite links will be valid until {{date}}"
@@ -420,21 +426,22 @@ class GiveInviteLinksReply(CallbackInlineReplyBuilder):
             f"{self.customer.chat_id}:{chat_id}:{time}"
         )
 
-    def _get_invite_links_str(
-        self, 
-        links: typing.List[
-            typing.Tuple[str, str]
-        ]
-    ) -> str:
-        text = Text("")
-        for chat_title, link in links:
-            text += _(
-                "-- {{chat_title}} - {{link}}\n"
-            ).context(
-                chat_title=chat_title,
-                link=link
-            )
-        return text.load()
+
+    # def _get_invite_links_str(
+    #     self, 
+    #     links: typing.List[
+    #         typing.Tuple[str, str]
+    #     ]
+    # ) -> str:
+    #     text = Text("")
+    #     for chat_title, link in links:
+    #         text += _(
+    #             "-- {{chat_title}} - {{link}}\n"
+    #         ).context(
+    #             chat_title=chat_title,
+    #             link=link
+    #         )
+    #     return text.load()
 
 
 class RevokeAccessNotificationReply(CallbackInlineReplyBuilder):
