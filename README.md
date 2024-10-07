@@ -45,7 +45,8 @@ This worker periodically checks if the titles of Telegram chats stored in the da
 
 ## Accesser
 - `get_chat_info <chat_id>` - Retrieves all available information about a specified chat
-- `kick_chat_member <chat_id> <user_id>` - Kick member
+- `ban_chat_member <chat_id> <user_id>` - Ban chat memeber with his invite links
+- `unban_chat_member <chat_id> <user_id>` - Unban chat member and his invite links (do nothing if not banned)
 
 ## Main
 - `generate_field_encryption_key` - 
