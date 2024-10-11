@@ -28,5 +28,11 @@ class CallbackInlineRouter(CallbackInlineRouterBase):
         if _is("RevokeAccessNotificationReply"):
             return self.build_reply(replies.RevokeAccessNotificationReply)
 
+        if _is("SubscriptionExpiringNotificationReply"):
+            return self.build_reply(replies.SubscriptionExpiringNotificationReply)
+
+        if _is("SubscriptionRechargedReply"):
+            return self.build_reply(replies.SubscriptionRechargedReply)
+
         return self.reply_not_found()
 

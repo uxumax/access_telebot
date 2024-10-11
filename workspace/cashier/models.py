@@ -1,11 +1,8 @@
 from django.db import models
-from django.utils import timezone
-from datetime import datetime, timedelta
-import typing
-import cashier.types
+from datetime import timedelta
 import main.models
 import accesser.models
-from encrypted_model_fields.fields import EncryptedCharField, EncryptedTextField
+from encrypted_model_fields.fields import EncryptedCharField
 
 
 class TransactionStatusChoices(models.TextChoices):
@@ -78,6 +75,12 @@ class BuildingInvoice(TempModelAbstract):
         null=True,
         blank=True
     )
+    access = models.ForeignKey(
+        accesser.models.CustomerChatAccess, 
+        on_delete=models.CASCADE, 
+        null=True,
+        blank=True
+    )
     duration = models.ForeignKey(
         accesser.models.SubscriptionDurationPrice,
         on_delete=models.CASCADE, 
@@ -131,7 +134,14 @@ class CryptoInvoice(models.Model):
     subscription = models.ForeignKey(
         accesser.models.Subscription, 
         on_delete=models.SET_NULL,
-        null=True
+        null=True,
+        blank=True
+    )
+    access = models.ForeignKey(
+        accesser.models.CustomerChatAccess, 
+        on_delete=models.CASCADE, 
+        null=True,
+        blank=True
     )
     duration = models.ForeignKey(
         accesser.models.SubscriptionDurationPrice,

@@ -25,6 +25,8 @@ from access_telebot.settings_local import (
     STATIC_ROOT,
     CSRF_TRUSTED_ORIGINS,
     LOGGING,
+    NOTIFIER_SUBSCRIBTION_EXPIRRING_DAYS_BEFORE,
+    WAIT_AFTER_SUBSCRIBTION_EXPIRED_DAYS,
 )
 
 from pathlib import Path

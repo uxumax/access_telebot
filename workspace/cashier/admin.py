@@ -3,6 +3,11 @@ from django.utils import timezone
 from . import models
 
 
+class CryptoTransactionInline(admin.TabularInline):
+    model = models.CryptoTransaction
+    extra = 0
+
+
 @admin.register(models.CryptoInvoice)
 class CryptoInvoiceAdmin(admin.ModelAdmin):
     list_display = (
@@ -24,6 +29,10 @@ class CryptoInvoiceAdmin(admin.ModelAdmin):
     )  # Adjust these fields based on your Customer and Subscription models
     date_hierarchy = "create_date"
     actions = ["mark_as_paid"]
+
+    inlines = [
+        CryptoTransactionInline,
+    ]
 
     @admin.action(description="Mark selected invoices as paid")
     def mark_as_paid(self, request, queryset):

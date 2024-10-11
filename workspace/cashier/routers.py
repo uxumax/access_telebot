@@ -42,4 +42,7 @@ class CallbackInlineRouter(CallbackInlineRouterBase):
         if _is("CryptoPayingReply"):
             return self.build_reply(replies.CryptoPayingReply) 
 
+        if _is("RechargeSubscriptionReply"):
+            return self.build_reply(replies.RechargeSubscriptionReply) 
+
         return self.reply_not_found()

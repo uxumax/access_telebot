@@ -1,9 +1,9 @@
 from django.utils import timezone
 from access_telebot.logger import get_logger
 import telebot
-from time import sleep
 
 from main.workers import core
+from messenger.routers import build_callback_inline_reply
 from accesser import models
 from access_telebot.settings import (
     TELEBOT_KEY,
@@ -48,7 +48,7 @@ class Worker(core.Worker):
     @staticmethod
     def _revoke_access(access):
         for chat in access.chat_group.chats.all():
-            bot.kick_chat_member(
+            bot.ban_chat_member(
                 chat.chat_id, access.customer.chat_id
             )
 

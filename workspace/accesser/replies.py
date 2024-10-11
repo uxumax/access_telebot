@@ -1,7 +1,11 @@
 import typing
 from datetime import timedelta
 from django.utils import timezone
-from access_telebot.settings import TELEBOT_KEY
+from access_telebot.settings import (
+    TELEBOT_KEY,
+    NOTIFIER_SUBSCRIBTION_EXPIRRING_DAYS_BEFORE,
+    WAIT_AFTER_SUBSCRIBTION_EXPIRED_DAYS,
+)
 from access_telebot.logger import get_logger
 from telebot import TeleBot
 from django.db.models import Q
@@ -55,9 +59,9 @@ class SubscriptionReplyBuilder(CallbackInlineReplyBuilder):
         if subscription is None:
             return
         if subscription.parent is None:
-            args = None # Show top subscriptions
+            args = None  # Show top subscriptions
         elif subscription.parent.is_whole_only:
-            args = None # Show top subscriptions
+            args = None  # Show top subscriptions
         else:
             args = subscription.parent_id
 
@@ -225,6 +229,231 @@ class InviteLinkSendReplyBuilder(CallbackInlineReplyBuilder):
                 text = Text("")  # Reset text for the next batch
 
 
+class InvoiceFinderReplyBuilder(CallbackInlineReplyBuilder):
+    USING_ARGS = (
+        "invoice_type_code",
+        "confirmed_invoice_id",
+    )
+
+    def get_invoice(self):
+        invoice_type_code = self._get_invoice_type_code()
+        invoice_id = self._get_confirmed_invoice_id()
+        if invoice_type_code == "c":  # crypto invoices
+            return self._get_crypto_invoice(invoice_id)
+        else:
+            raise ValueError(
+                f"Unsupported invoice type code {invoice_type_code}"
+            )
+    
+    def _get_crypto_invoice(
+        self,
+        invoice_id: int
+    ):
+        try:
+            return cashier.models.CryptoInvoice.objects.select_related(
+                'subscription', 
+                'duration',
+                'customer',
+            ).get(
+                id=invoice_id, 
+                customer=self.customer,
+                status="CONFIRMED",
+            )
+        except cashier.models.CryptoInvoice.DoesNotExist:
+            self.send_message(
+                _("Cannot find your invoice")
+            )
+            return self.router.redirect(
+                app_name="main",
+                reply_name="StartReply"
+            )
+            # raise Exception(
+            #     f"Cannot find confirmed invoice with id {invoice_id}"
+            # )
+
+    def _get_invoice_type_code(self) -> str:
+        return self.callback.args[0]
+
+    def _get_confirmed_invoice_id(self) -> int:
+        return int(self.callback.args[1])
+
+
+class SubscriptionRechargedReply(InvoiceFinderReplyBuilder):
+    USING_ARGS = (
+        "invoice_type_code",
+        "confirmed_invoice_id",
+    )
+
+    def build(self):
+        invoice = self.get_invoice()
+        self._prolongate_access(
+            invoice.access,
+            invoice.duration.duration
+        )
+        invoice.status = "REDEEMED"
+        invoice.save()
+
+        text = _(
+            "Your subscription {{subscription_name}} has been rechrged"
+            "and will be end {{end_date}}"
+        ).context(
+            subscription_name=invoice.access.subscription.name,
+            end_date=invoice.access.end_date.strftime("%d-%m-%Y %H:%M")
+        )
+        self.send_message(
+            text
+        )
+        self.router.redirect(
+            app_name="main",
+            reply_name="StartReply"
+        )
+    
+    @staticmethod
+    def _prolongate_access(
+        access: models.CustomerChatAccess,
+        duration: timedelta
+    ):
+        if access.revoked_date is None:
+            # Access was not revoked
+            access.end_date += duration
+        else:
+            # Access was revoked
+            access.end_date = (
+                access.revoked_date + duration
+            ) - WAIT_AFTER_SUBSCRIBTION_EXPIRED_DAYS
+        access.active = True 
+        access.save()
+
+
+class GiveInviteLinksReply(
+    InviteLinkSendReplyBuilder,
+    InvoiceFinderReplyBuilder
+):
+    USING_ARGS = (
+        "invoice_type_code",
+        "confirmed_invoice_id",
+    )
+
+    def build(self):
+        invoice = self.get_invoice()
+        customer_chat_access = self._assign_subscription_access(
+            invoice.subscription, 
+            invoice.duration.duration,        
+        )
+        
+        invite_links = self._get_invite_links(customer_chat_access)
+        self.send_message(
+            "Here is your invite links"
+        )
+        self.send_invite_links(invite_links)
+
+        valid_until_date = (
+            timezone.now() + invoice.duration.duration
+        ).strftime("%d-%m-%Y %H:%M")
+        self.send_message(
+            _(
+                "All invite links will be valid until {{date}}"
+            ).context(
+                date=valid_until_date
+            )
+        )
+
+        invoice.status = "REDEEMED"
+        invoice.save()
+        
+        return self.router.redirect(
+            "MySubscriptionsReply"
+        )
+
+    def _assign_subscription_access(
+        self,
+        subscription: models.Subscription,
+        duration: timedelta,
+    ) -> None:
+        start_date = timezone.now()
+        end_date = start_date + duration
+        access = models.CustomerChatAccess.objects.create(
+            customer=self.customer,
+            start_date=start_date,
+            end_date=end_date,
+            subscription=subscription,
+            active=True,
+        )
+        return access
+
+    def _get_invite_links(
+        self,
+        access: models.CustomerChatAccess,
+    ) -> list:
+        links = []
+        # for chat in access.subscription.chats.all():
+        for chat in access.subscription.get_all_child_chats():
+            link = self._create_invite_link(
+                access, chat
+            ) 
+            links.append(
+                (chat.title, link)
+            )
+        return links
+
+    def _create_invite_link(
+        self, 
+        access: models.CustomerChatAccess,
+        chat: models.Chat, 
+    ) -> str: 
+        # expire_timestamp = int(access.end_date.timestamp())
+        link_name = self._get_invite_link_name(chat.chat_id)
+        try:    
+            invite_link = bot.create_chat_invite_link(
+                name=link_name,
+                chat_id=chat.chat_id,  
+                # expire_date=expire_timestamp,  # Expiration date as a Unix timestamp
+                member_limit=1,
+                creates_join_request=False  # This will require administrators to approve join requests
+            )
+        except Exception as e:
+            log.exception(e)
+            raise Exception(
+                "Cannot make invite link for {self.customer} "
+                f"to chat {chat.chat_id}:\n {e}"
+            )
+        
+        invite_link_str = invite_link.invite_link
+
+        models.InviteLink.objects.create(
+            name=link_name,
+            url=invite_link_str,
+            customer=self.customer,
+            chat=chat,
+            access=access,
+            expire_date=access.end_date
+        )
+
+        return invite_link_str
+
+    def _get_invite_link_name(self, chat_id: int):
+        time = timezone.now().timestamp()  # for uniqilize link name
+        return (
+            f"{self.customer.chat_id}:{chat_id}:{time}"
+        )
+
+    # def _get_invite_links_str(
+    #     self, 
+    #     links: typing.List[
+    #         typing.Tuple[str, str]
+    #     ]
+    # ) -> str:
+    #     text = Text("")
+    #     for chat_title, link in links:
+    #         text += _(
+    #             "-- {{chat_title}} - {{link}}\n"
+    #         ).context(
+    #             chat_title=chat_title,
+    #             link=link
+    #         )
+    #     return text.load()
+
+
 class RemindInviteLinksReply(InviteLinkSendReplyBuilder):
     USING_ARGS = ()
 
@@ -272,185 +501,90 @@ class RemindInviteLinksReply(InviteLinkSendReplyBuilder):
         return self.markup
 
 
-class GiveInviteLinksReply(InviteLinkSendReplyBuilder):
+class SubscriptionExpireNotificationBuilder(CallbackInlineReplyBuilder):
     USING_ARGS = (
-        "invoice_type_code",
-        "confirmed_invoice_id",
+        "access_id",
+    )
+
+    def get_access(self):
+        access_id = self._get_access_id()
+        return models.CustomerChatAccess.objects.get(
+            pk=access_id,
+            # active=False
+        )
+
+    def _get_access_id(self):
+        return int(self.callback.args[0])
+
+    def get_customer_expiring_accesses(self):
+        access = self.get_access()
+        customer = access.customer
+        return models.CustomerChatAccess.objects.filter(
+            customer=customer,
+            end_date__lt=timezone.now() + NOTIFIER_SUBSCRIBTION_EXPIRRING_DAYS_BEFORE  # timedelta  from LOCAL_SETTING
+        )
+
+
+class SubscriptionExpiringNotificationReply(SubscriptionExpireNotificationBuilder):
+    USING_ARGS = (
+        "access_id",
     )
 
     def build(self):
-        invoice = self._get_invoice()
-        if invoice.status != "CONFIRMED":
+        text = _("Please do not forget recharge your subscription(s):\n") 
+        accesses = self.get_customer_expiring_accesses()
+        if accesses.count() == 0:
             self.send_message(
-                _(
-                    "Can't send invite links because can't find your confirmed invoice"       
-                )
+                _("You don't have any expiring subscription")
+            )
+            return self.router.redirect(
+                app_name="main",
+                reply_name="StartReply"
             )
 
-        customer_chat_access = self._assign_subscription_access(
-            invoice.subscription, 
-            invoice.duration.duration,        
-        )
-        
-        invite_links = self._get_invite_links(customer_chat_access)
-        self.send_message(
-            "Here is your invite links"
-        )
-        self.send_invite_links(invite_links)
+        for access in accesses:
+            context = {
+                "subscription_name": access.subscription.name,
+                "expire_date": access.end_date
+            }
+            if access.end_date < timezone.now():
+                text += _(
+                    "{{subscription_name}}\nWill be expired {{expire_date}}\n"
+                ).context(**context)
+            else:
+                text += _(
+                    "{{subscription_name}}\nAlready expired {{expire_date}}\n"
+                ).context(**context)
+            text += "\n"
 
-        valid_until_date = (
-            timezone.now() + invoice.duration.duration
-        ).strftime("%d-%m-%Y %H:%M")
         self.send_message(
-            _(
-                "All invite links will be valid until {{date}}"
+            text,
+            reply_markup=self._build_markup(accesses)
+        )
+
+    def _build_markup(self, accesses):
+        for access in accesses:
+            text = _(
+                "Recharge {{subscription_name}}"
             ).context(
-                date=valid_until_date
+                subscription_name=access.subscription.name
             )
-        )
-
-        invoice.status = "REDEEMED"
-        invoice.save()
-        
-        return self.router.redirect(
-            "MySubscriptionsReply"
-        )
-
-    def _get_invoice(self):
-        invoice_type_code = self._get_invoice_type_code()
-        invoice_id = self._get_confirmed_invoice_id()
-        if invoice_type_code == "c":  # crypto invoices
-            return self._get_crypto_invoice(invoice_id)
-        else:
-            raise ValueError(
-                f"Unsupported invoice type code {invoice_type_code}"
+            self.add_button(
+                text,
+                app_name="cashier",
+                reply_name="RechargeSubscriptionReply",  
+                args=access.id
             )
-    
-    def _get_crypto_invoice(
-        self,
-        invoice_id: int
-    ):
-        try:
-            return cashier.models.CryptoInvoice.objects.select_related(
-                'subscription', 
-                'duration',
-                'customer',
-            ).get(
-                id=invoice_id, 
-                customer=self.customer,
-                status="CONFIRMED",
-            )
-        except cashier.models.CryptoInvoice.DoesNotExist:
-            self.send_message(
-                _("Cannot find your invoice")
-            )
-            raise Exception(
-                f"Cannot find confirmed invoice with id {invoice_id}"
-            )
+        return self.markup
+            
 
-    def _get_invoice_type_code(self) -> str:
-        return self.callback.args[0]
-
-    def _get_confirmed_invoice_id(self) -> int:
-        return int(self.callback.args[1])
-
-    def _assign_subscription_access(
-        self,
-        subscription: models.Subscription,
-        duration: timedelta,
-    ) -> None:
-        start_date = timezone.now()
-        end_date = start_date + duration
-        access = models.CustomerChatAccess.objects.create(
-            customer=self.customer,
-            start_date=start_date,
-            end_date=end_date,
-            subscription=subscription,
-            active=True,
-        )
-        return access
-
-    def _get_invite_links(
-        self,
-        access: models.CustomerChatAccess,
-    ) -> list:
-        links = []
-        # for chat in access.subscription.chats.all():
-        for chat in access.subscription.get_all_child_chats():
-            link = self._create_invite_link(
-                access, chat
-            ) 
-            links.append(
-                (chat.title, link)
-            )
-        return links
-
-    def _create_invite_link(
-        self, 
-        access: models.CustomerChatAccess,
-        chat: models.Chat, 
-    ) -> str: 
-        expire_timestamp = int(access.end_date.timestamp())
-        link_name = self._get_invite_link_name(chat.chat_id)
-        try:    
-            invite_link = bot.create_chat_invite_link(
-                name=link_name,
-                chat_id=chat.chat_id,  
-                expire_date=expire_timestamp,  # Expiration date as a Unix timestamp
-                member_limit=1,
-                creates_join_request=False  # This will require administrators to approve join requests
-            )
-        except Exception as e:
-            log.exception(e)
-            raise Exception(
-                "Cannot make invite link for {self.customer} "
-                f"to chat {chat.chat_id}:\n {e}"
-            )
-        
-        invite_link_str = invite_link.invite_link
-
-        models.InviteLink.objects.create(
-            name=link_name,
-            url=invite_link_str,
-            customer=self.customer,
-            chat=chat,
-            access=access,
-            expire_date=access.end_date
-        )
-
-        return invite_link_str
-
-    def _get_invite_link_name(self, chat_id: int):
-        time = timezone.now().timestamp()  # for uniqilize link name
-        return (
-            f"{self.customer.chat_id}:{chat_id}:{time}"
-        )
-
-
-    # def _get_invite_links_str(
-    #     self, 
-    #     links: typing.List[
-    #         typing.Tuple[str, str]
-    #     ]
-    # ) -> str:
-    #     text = Text("")
-    #     for chat_title, link in links:
-    #         text += _(
-    #             "-- {{chat_title}} - {{link}}\n"
-    #         ).context(
-    #             chat_title=chat_title,
-    #             link=link
-    #         )
-    #     return text.load()
-
-
-class RevokeAccessNotificationReply(CallbackInlineReplyBuilder):
+class RevokeAccessNotificationReply(SubscriptionExpireNotificationBuilder):
     USING_ARGS = (
-        "revoked_access_id",
+        "access_id",
     )
 
     def build(self):
-        revoked_access = self._get_revoked_access()
+        revoked_access = self.get_access()
         revoked_chats_list_text = self._get_revoked_chat_list_str(
             revoked_access
         )
@@ -465,22 +599,12 @@ class RevokeAccessNotificationReply(CallbackInlineReplyBuilder):
             reply_markup=self._build_markup(revoked_access)
         )
 
-    def _get_revoked_access(self):
-        access_id = self._get_revoked_access_id()
-        return models.CustomerChatAccess.objects.get(
-            pk=access_id,
-            active=False
-        )
-
-    def _get_revoked_access_id(self):
-        return self.callback.args[0]
-
     def _get_revoked_chat_list_str(
         self, 
         revoked_access: models.CustomerChatAccess
     ) -> str:
         text = Text("")
-        for chat in revoked_access.subscription.chats.all():
+        for chat in revoked_access.subscription.get_all_child_chats():
             row: Text = _(
                 "-- {{chat_title}}\n"
             ).context(
@@ -493,12 +617,11 @@ class RevokeAccessNotificationReply(CallbackInlineReplyBuilder):
         self,
         revoked_access: models.CustomerChatAccess
     ):
-        if revoked_access.subscription is not None:
-            self.add_button(
-                _("Buy access again"),
-                app_name="cashier",
-                reply_name="ChooseAccessDurationReply",
-                args=revoked_access.subscription.id
-            )
+        self.add_button(
+            _("Restore access"),
+            app_name="cashier",
+            reply_name="RechargeSubscriptionReply",  # TODO
+            args=revoked_access.id
+        )
         return self.markup
 

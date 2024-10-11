@@ -40,6 +40,57 @@ class BuildingInvoiceReplyBuilder(CallbackInlineReplyBuilder):
             and self.customer.building_invoice is not None
 
 
+class RechargeSubscriptionReply(BuildingInvoiceReplyBuilder):
+    USING_ARGS = (
+        "access_id",
+    )
+
+    def build(self):
+        self.access = self._get_access()
+        self._update_invoice()
+
+        self.send_message(
+            _(
+                "Choose period for recharging subscription {{subscription}}"
+            ).context(
+                subscription=self.access.subscription.name
+            ),
+            reply_markup=self._build_markup()
+        )
+
+    def _get_access(self):
+        access_id = self._get_access_id()
+        return accesser.models.CustomerChatAccess.objects.get(pk=access_id)
+
+    def _get_access_id(self):
+        return int(self.callback.args[0])
+
+    def _update_invoice(self):
+        self.invoice.subscription = self.access.subscription
+        self.invoice.access = self.access
+        self.invoice.save()
+
+    def _build_markup(self):
+        durations = self.invoice.subscription.durations.all()
+        for duration in durations:
+            self.add_button(
+                _(
+                    "{{duration}} - {{price}} USDT", 
+                ).context(
+                    duration=duration.format_duration(),
+                    price=duration.price,
+                ),
+                reply_name="ChoosePayMethodReply",
+                args=duration.id
+            )
+        self.add_button(
+            _("Cancel"),
+            app_name="main",
+            reply_name="StartReply"
+        )
+        return self.markup    
+        
+
 class ChooseAccessDurationReply(BuildingInvoiceReplyBuilder):
     USING_ARGS = (
         "subscription_id",
@@ -291,6 +342,7 @@ class CryptoPayingReply(BuildingInvoiceReplyBuilder):
         invoice = models.CryptoInvoice.objects.create(
             customer=i.customer,
             subscription=i.subscription,
+            access=i.access,
             duration=i.duration,
             network=i.network,
             currency=i.currency,
@@ -320,6 +372,7 @@ class CryptoInvoicePayingReplyBulder(CallbackInlineReplyBuilder):
             status__in=[
                 "PAYING",
                 "PAID",
+                "CONFIRMED",
             ],
         ).last()
 
@@ -459,14 +512,26 @@ class CryptoConfirmWaitReply(CryptoInvoicePayingReplyBulder):
             self.send_message(
                 _("Your transaction has been confirmed")
             )
-            return self.router.redirect(
-                app_name="accesser",
-                reply_name="GiveInviteLinksReply",
-                args=[
-                    "c",  # invoice code for crypto invoices
-                    self.invoice.id,
-                ]
-            )
+            if self.invoice.access is None:
+                # Buy new subscription
+                return self.router.redirect(
+                    app_name="accesser",
+                    reply_name="GiveInviteLinksReply",
+                    args=[
+                        "c",  # invoice code for crypto invoices
+                        self.invoice.id,
+                    ]
+                )
+            else:
+                # Recharge old subscription
+                return self.router.redirect(
+                    app_name="accesser",
+                    reply_name="SubscriptionRechargedReply",
+                    args=[
+                        "c",  # invoice code for crypto invoices
+                        self.invoice.id,
+                    ]
+                )
         else:
             self.send_message(
                 _(

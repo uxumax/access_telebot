@@ -52,7 +52,6 @@ class Chat(models.Model):
                 raise ValidationError({'invite_link': "Invalid URL."}) from e
 
 
-from collections import defaultdict
 class Subscription(models.Model):
     name = models.CharField(max_length=100)
     chats = models.ManyToManyField(
@@ -137,6 +136,10 @@ class CustomerChatAccess(models.Model):
     customer = models.ForeignKey(main.models.Customer, on_delete=models.CASCADE)
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
+    revoked_date = models.DateTimeField(
+        null=True,
+        blank=True
+    )
     subscription = models.ForeignKey(
         Subscription, 
         on_delete=models.SET_NULL, 
