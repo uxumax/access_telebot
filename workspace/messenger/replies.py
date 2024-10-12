@@ -201,12 +201,12 @@ class CommandReplyBuilder(ReplyBuilder):
     def __init__(
         self, 
         customer: main.models.Customer, 
-        # message: typing.Optional[
-        #     telebot.types.Message
-        # ] = None,
+        message: typing.Optional[
+            telebot.types.Message
+        ] = None,
     ):
         self.customer = customer
-        # self.message = message
+        self.message = message
         self.markup = InlineKeyboardMarkup()
 
 
@@ -247,7 +247,7 @@ class CustomCommandReply(CustomReplyBuilder):
             reply = models.CommandReply.objects.get(
                 command=self._parse_command()
             )
-        except models.CommandReply.DoesNotExists:
+        except models.CommandReply.DoesNotExist:
             bot.reply_to(
                 self.message, 
                 f"I don't know command {self.message.text}"

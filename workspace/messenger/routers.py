@@ -252,8 +252,9 @@ class CommandRouterBase:
             raise ValueError("Either 'message' or 'reply_name' must be provided.")
 
         self.customer = customer
+        self.message = message
         self.reply_name = reply_name
-        
+
         if message is not None:
             self.command = self._parse_command(message)
 
@@ -279,7 +280,10 @@ class CommandRouter(CommandRouterBase):
         else:
             import main.replies
             reply = getattr(main.replies, self.reply_name) 
-        return reply(self.customer).build()
+        return reply(
+            customer=self.customer,
+            message=self.message
+        ).build()
         
     def _parse_command(self, message: telebot.types.Message) -> str:
         command = message.text.split()[0][1:]  # Извлечение команды без '/'
