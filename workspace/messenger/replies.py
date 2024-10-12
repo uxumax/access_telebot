@@ -211,7 +211,6 @@ class CommandReplyBuilder(ReplyBuilder):
 
 
 class CustomReplyBuilder:
-    log = get_logger(__name__)
 
     def build_markup(
         self, 
@@ -219,19 +218,41 @@ class CustomReplyBuilder:
     ) -> telebot.types.InlineKeyboardMarkup:
         buttons = reply.get_buttons()
         if not buttons.exists():
-            self.log.info(f"Reply for <{reply}> has no buttons")
+            log.info(f"Reply for <{reply}> has no buttons")
             return None
 
         # Создание инлайн-клавиатуры
         markup = InlineKeyboardMarkup()
         for button in buttons:
             # Добавление кнопки
-            button = InlineKeyboardButton(
-                button.caption, callback_data=button.reply.callback_data,
+            keyboard_button = InlineKeyboardButton(
+                button.caption, 
+                callback_data=button.reply.callback_data,
             )
-            markup.add(button)
+            markup.add(keyboard_button)
+            models.ShowedInlineButton.objects.update_or_create(
+                callback_data=button.reply.callback_data,
+                defaults={
+                    "caption": button.caption, 
+                }
+            )
         return markup
 
+        # callback = Callback.stringify(
+        #     app_name, reply_name, args
+        # )
+        # self.markup.add(
+        #     InlineKeyboardButton(
+        #         caption_display, 
+        #         callback_data=callback
+        #     )
+        # ) 
+        # models.ShowedInlineButton.objects.update_or_create(
+        #     callback_data=callback,
+        #     defaults={
+        #         "caption": caption_display, 
+        #     }
+        # )
 
 class CustomCommandReply(CustomReplyBuilder):
     def __init__(
@@ -277,7 +298,7 @@ class CustomCallbackInlineReply(CustomReplyBuilder):
     def build(self):
         try:
             reply = models.CallbackInlineReply.objects.get(
-                callback_data=self.callback.data
+                callback_data=self.callback.stringify_self()
             )
         except models.CallbackInlineReply.DoesNotExist:  # Исправлена опечатка здесь
             bot.answer_callback_query(  # Используйте этот метод для отправки уведомления пользователю
@@ -287,11 +308,11 @@ class CustomCallbackInlineReply(CustomReplyBuilder):
             return
 
         # Используйте этот метод, чтобы сказать телеге, что сигнал от кнопки получен
-        bot.answer_callback_query(self.callback.id)
+        # bot.answer_callback_query(self.callback.id)
         
         # Используйте send_message для ответа в чат, а не reply_to
         bot.send_message(
-            self.callback.message.chat.id,  # Получаем ID чата из callback.message
+            self.customer.chat_id,
             reply.text,
             reply_markup=self.build_markup(reply),
             parse_mode="HTML",

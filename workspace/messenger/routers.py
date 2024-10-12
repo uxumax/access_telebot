@@ -11,6 +11,7 @@ import telebot.types
 
 
 bot = TeleBot(settings.TELEBOT_KEY)
+log = get_logger(__name__)
 
 
 class ReplyTypeConverter:
@@ -54,6 +55,19 @@ class Callback:
         self.reply_type = reply_type
         self.reply_name = reply_name
         self.args = args
+
+    def stringify_self(self):
+        if self.reply_type == "CALLBACK":
+            reply_code = 2
+        elif self.reply_type == "COMMAND":
+            reply_code = 1
+        else:
+            raise ValueError(
+                "Unsupported Callback reply_type"
+            )
+        return (
+            f"{self.app_name}&{reply_code}&{self.reply_name}"
+        ) # TODO add arguments stringify
 
     @classmethod
     def stringify(
@@ -149,7 +163,7 @@ class CallbackInlineRouterBase:
         # bot.answer_callback_query(self.callback.id)
         with transaction.atomic():
             builder.build()
-        self.log.debug(
+        log.debug(
             f"Has been built reply for callback:\n"
             f"{(self.callback.app_name, self.callback.reply_name)}"
         )
@@ -220,7 +234,7 @@ class CallbackInlineRouterBase:
         try:
             app_module = import_module(f'{app_name}.routers')
         except (ImportError, AttributeError) as e:
-            self.log.exception(
+            log.exception(
                 f"Error loading module or class for app '{app_name}': {e}"
             )
             raise Exception(e)
@@ -237,7 +251,6 @@ class CallbackInlineRouterBase:
 
 
 class CommandRouterBase:
-    log = get_logger(__name__)
     
     def __init__(
         self, 
@@ -268,7 +281,7 @@ class CommandRouterBase:
         builder = InlineReply(self.customer)
         with transaction.atomic():
             builder.build()
-        self.log.debug(
+        log.debug(
             f"Has been built reply {self.reply_name}:"
         )
 
@@ -302,14 +315,13 @@ class CommandRouter(CommandRouterBase):
 
 
 class CallbackInlineRouter(CallbackInlineRouterBase):
-    log = get_logger(__name__)
 
     def route(self):
         if self.callback.app_name == "custom":
             from . import replies
             return replies.CustomCallbackInlineReply(
                 self.customer, self.callback              
-            )
+            ).build()
 
         else:
             cb = self.callback

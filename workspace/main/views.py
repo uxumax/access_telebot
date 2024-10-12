@@ -25,6 +25,7 @@ def _save_or_update_user(
     come_type: typing.Literal[
         "COMMAND",
         "CALLBACK",
+        "CUSTOMER_MESSAGE",
     ],
 ) -> None:
     """
@@ -133,7 +134,7 @@ class InlineCallbackFirstHandler:
                 callback_data=self.callback.data
             )
         except ShowedInlineButton.DoesNotExist:
-            self.warning(
+            log.warning(
                 "Cannot set selected button coz callback_data "
                 "not exists in messenger.ShowedInlineButton model records"
             )
@@ -158,7 +159,7 @@ def command_handler(message: telebot.types.Message):
 # General handler for all messages
 @bot.message_handler(func=lambda message: True)
 def handle_all_messages(message: telebot.types.Message) -> None:
-    _save_or_update_user(message.from_user)
+    _save_or_update_user(message.from_user, "CUSTOMER_MESSAGE")
     bot.reply_to(
         message, f"Your message is {message.text} but I don't know what to do with this"
     )

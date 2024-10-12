@@ -33,7 +33,11 @@ class InlineButton(models.Model):
 
 
 class CallbackInlineReply(BotMessage):
-    callback_data = models.SlugField(unique=True)
+    callback_data = models.CharField(
+        max_length=255, 
+        unique=True,
+        help_text="Example: custom&2&custom_replyname",
+    )
     message = models.OneToOneField(
         BotMessage, 
         on_delete=models.CASCADE, 
@@ -46,7 +50,11 @@ class CallbackInlineReply(BotMessage):
 
 
 class CommandReply(BotMessage):
-    command = models.CharField(max_length=255)
+    command = models.CharField(
+        max_length=255,
+        unique=True,
+        help_text="Set without `/`. Example: `get_company_info`",
+    )
     message = models.OneToOneField(
         BotMessage, 
         on_delete=models.CASCADE, 
