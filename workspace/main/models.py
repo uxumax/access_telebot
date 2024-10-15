@@ -58,6 +58,11 @@ class CustomerBase(models.Model):  # System base class
         default=timezone.make_aware(timezone.datetime(1970, 1, 1))
     )  # Время последнего callback-вызова
 
+    last_notification_date = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
 
 class Customer(CustomerBase):
     base = models.OneToOneField(

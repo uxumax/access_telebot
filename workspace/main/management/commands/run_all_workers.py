@@ -1,9 +1,11 @@
 import logging
 from django.core.management.base import BaseCommand
-from django.utils import timezone
-from threading import Thread, Timer, Event
-import time
-import sys
+# from django.utils import timezone
+from threading import (
+    Thread, 
+    # Timer, 
+    Event
+)
 import signal
 
 from main.workers import webhook_tunneler
@@ -15,6 +17,9 @@ from cashier.workers import (
 from accesser.workers import (
     customer_access_revoker,
     chat_updater,
+)
+from messenger.workers import (
+    periodic_notifier,
 )
 
 stop_event = Event()
@@ -36,6 +41,7 @@ class Command(BaseCommand):
             invoice_confirm_checker.Worker(),
             customer_access_revoker.Worker(),
             chat_updater.Worker(),
+            periodic_notifier.Worker(),
         ]
         self.threads = []
 
@@ -74,5 +80,5 @@ class Command(BaseCommand):
             worker.start()
         except Exception as e:
             logging.exception(
-                "Error in worker {type(worker).__name__}: {e}", exc_info=True
+                f"Error in worker {type(worker).__name__}: {e}", exc_info=True
             )

@@ -10,7 +10,7 @@ from telebot.types import (
     InlineKeyboardButton
 )
 
-from .routers import Callback
+from .routers import Callback, CallbackInlineRouter
 from access_telebot.logger import get_logger
 
 import main.models
@@ -19,7 +19,6 @@ from . import models
 
 log = get_logger(__name__)
 bot = TeleBot(settings.TELEBOT_KEY)
-
 
 
 class Text:
@@ -114,7 +113,6 @@ def translate(text: str) -> str:
     return Translator(
         settings.TRANSLATION
     ).translate(text)
-
 
 
 class ReplyBuilder:
@@ -253,6 +251,7 @@ class CustomReplyBuilder:
         #         "caption": caption_display, 
         #     }
         # )
+
 
 class CustomCommandReply(CustomReplyBuilder):
     def __init__(

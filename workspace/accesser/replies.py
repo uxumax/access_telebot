@@ -545,9 +545,9 @@ class SubscriptionExpiringNotificationReply(SubscriptionExpireNotificationBuilde
         for access in accesses:
             context = {
                 "subscription_name": access.subscription.name,
-                "expire_date": access.end_date
+                "expire_date": access.end_date.strftime("%d-%m-%Y %H:%M")
             }
-            if access.end_date < timezone.now():
+            if access.end_date > timezone.now():
                 text += _(
                     "{{subscription_name}}\nWill be expired {{expire_date}}\n"
                 ).context(**context)

@@ -30,7 +30,7 @@ class CallbackInlineReplyAdmin(admin.ModelAdmin):
 
 @admin.register(models.Notification)
 class NotificationAdmin(admin.ModelAdmin):
-    list_display = ('text', 'alert_date', 'is_sent')
+    list_display = ('alert_date', 'is_sent')
     inlines = [InlineButtonInline]
 
 

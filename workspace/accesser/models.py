@@ -8,6 +8,7 @@ from messenger.replies import (
     translate as _
 )
 import main.models
+from access_telebot.settings import DEFAULT_ACCESS_REVOKING_METHOD
 
 
 class ChatTypeChoices(models.TextChoices):
@@ -132,10 +133,25 @@ class SubscriptionDurationPrice(models.Model):
         return ", ".join(parts) if parts else _("less than a minute")
 
 
+REVOKING_METHOD_CHOICES = {
+    # Access will be revoked exactly after `end_date`
+    "FORCE": "FORCE",  
+
+    # Access will be revoked after some numbers of days
+    # determined in access_telebot.settings_local.WAIT_AFTER_SUBSCRIBTION_EXPIRED_DAYS
+    "GENTLE": "GENTLE",  
+}
+
+
 class CustomerChatAccess(models.Model):
     customer = models.ForeignKey(main.models.Customer, on_delete=models.CASCADE)
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
+    revoking_method = models.CharField(
+        max_length=255,
+        choices=REVOKING_METHOD_CHOICES,
+        default=DEFAULT_ACCESS_REVOKING_METHOD
+    )
     revoked_date = models.DateTimeField(
         null=True,
         blank=True

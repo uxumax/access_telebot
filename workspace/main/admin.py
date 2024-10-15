@@ -46,6 +46,7 @@ class CustomerAdmin(admin.ModelAdmin):
                     "can_read_all_group_messages",
                     "supports_inline_queries",
                     "last_callback_inline_date",
+                    "last_notification_date",
                 )
             },
         ),

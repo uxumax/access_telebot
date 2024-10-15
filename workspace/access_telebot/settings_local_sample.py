@@ -76,3 +76,15 @@ LOGGING = {
         },
     }
 }
+
+# Warn about expiration days before subscription end
+NOTIFIER_SUBSCRIBTION_EXPIRRING_DAYS_BEFORE = timedelta(days=2)
+
+# Wait some days after subscription expired is default
+# Numbers of day for waitig after subscription expired 
+# setting in `WAIT_AFTER_SUBSCRIBTION_EXPIRED_DAYS`.
+# Set "FORCE" if need to revoke access exactly after `end_date`
+DEFAULT_ACCESS_REVOKING_METHOD="GENTLE",
+
+# Revoke access after number of days after `access.end_date`
+WAIT_AFTER_SUBSCRIBTION_EXPIRED_DAYS = timedelta(days=6)

@@ -3,6 +3,12 @@ from django.utils import timezone
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 
+import main.models
+
+
+class PeriodicNotifierWorkerStat(main.models.WorkerStatAbstract):
+    """Worker stat model"""
+
 
 class BotMessage(models.Model):
     text = models.TextField()
@@ -66,16 +72,36 @@ class CommandReply(BotMessage):
         return self.command
 
 
-class Notification(BotMessage):
-    message = models.OneToOneField(
-        BotMessage, 
+class Notification(models.Model):
+    customer = models.ForeignKey(
+        main.models.Customer,
         on_delete=models.CASCADE, 
-        parent_link=True, 
-        related_name="notification"
+        related_name="notifications"
     )
+    app_name = models.CharField(
+        max_length=255,
+        help_text="Django application name of CallbackInlineReply",
+    )
+    reply_name = models.CharField(
+        max_length=255,
+        help_text="CallbackInlineReply name",
+    )
+    args = models.CharField(
+        max_length=2024,
+        help_text="Separated by '&'; Example: 'arg1&arg2&arg3'"
+    )
+    # message = models.OneToOneField(
+    #     BotMessage, 
+    #     on_delete=models.CASCADE, 
+    #     parent_link=True, 
+    #     related_name="notification"
+    # )
 
     alert_date = models.DateTimeField(default=timezone.now)
     is_sent = models.BooleanField(default=False)
+
+    def get_args(self) -> list:
+        return self.args.split("&")
 
 
 class ShowedInlineButton(models.Model):
@@ -88,7 +114,6 @@ class ShowedInlineButton(models.Model):
     class Meta:
         verbose_name = 'Showed Inline Button'
         verbose_name_plural = 'Showed Inline Buttons'
-
 
 
 class Translation(models.Model):

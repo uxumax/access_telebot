@@ -13,6 +13,9 @@ from accesser.workers import (
     chat_updater,
 )
 
+from messenger.workers import (
+    periodic_notifier,
+)
 
 class Command(BaseCommand):
     help = 'Run worker in this thread'
