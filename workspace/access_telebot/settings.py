@@ -27,6 +27,7 @@ from access_telebot.settings_local import (
     LOGGING,
     NOTIFIER_SUBSCRIBTION_EXPIRRING_DAYS_BEFORE,
     WAIT_AFTER_SUBSCRIBTION_EXPIRED_DAYS,
+    DEFAULT_ACCESS_REVOKING_METHOD,
 )
 
 from pathlib import Path
