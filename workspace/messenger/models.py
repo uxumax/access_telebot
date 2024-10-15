@@ -10,22 +10,21 @@ class PeriodicNotifierWorkerStat(main.models.WorkerStatAbstract):
     """Worker stat model"""
 
 
-class BotMessage(models.Model):
+class CustomReplyBase(models.Model):
     text = models.TextField()
-    # buttons = models.ManyToManyField('InlineButton', blank=True)
 
     def get_buttons(self):
         """
-        Returns a queryset of InlineButton objects associated with this BotMessage.
+        Returns a queryset of InlineButton objects associated with this CustomReplyBase.
         """
         content_type = ContentType.objects.get_for_model(self)
-        return InlineButton.objects.filter(
+        return CustomReplyInlineButton.objects.filter(
             content_type=content_type, 
             object_id=self.id
         )
 
 
-class InlineButton(models.Model):
+class CustomReplyInlineButton(models.Model):
     caption = models.CharField(max_length=255)
     reply = models.ForeignKey('CallbackInlineReply', on_delete=models.CASCADE)
     
@@ -38,14 +37,14 @@ class InlineButton(models.Model):
         return str((self.caption, self.reply))
 
 
-class CallbackInlineReply(BotMessage):
+class CallbackInlineReply(CustomReplyBase):
     callback_data = models.CharField(
         max_length=255, 
         unique=True,
         help_text="Example: custom&2&custom_replyname",
     )
     message = models.OneToOneField(
-        BotMessage, 
+        CustomReplyBase, 
         on_delete=models.CASCADE, 
         parent_link=True, 
         related_name="callback_inline_reply"
@@ -55,14 +54,14 @@ class CallbackInlineReply(BotMessage):
         return self.callback_data
 
 
-class CommandReply(BotMessage):
+class CommandReply(CustomReplyBase):
     command = models.CharField(
         max_length=255,
         unique=True,
         help_text="Set without `/`. Example: `get_company_info`",
     )
     message = models.OneToOneField(
-        BotMessage, 
+        CustomReplyBase, 
         on_delete=models.CASCADE, 
         parent_link=True, 
         related_name="command_reply"
@@ -91,7 +90,7 @@ class Notification(models.Model):
         help_text="Separated by '&'; Example: 'arg1&arg2&arg3'"
     )
     # message = models.OneToOneField(
-    #     BotMessage, 
+    #     CustomReplyBase, 
     #     on_delete=models.CASCADE, 
     #     parent_link=True, 
     #     related_name="notification"

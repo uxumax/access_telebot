@@ -1,14 +1,15 @@
 from django.contrib import admin
 from . import models
-from django.utils import timezone
+# from django.utils import timezone
 from django.contrib.contenttypes.admin import GenericTabularInline
 
-from django.contrib import admin
-from .models import InlineButton, CallbackInlineReply
+from .models import CustomReplyInlineButton, CallbackInlineReply
+from django.urls import reverse
+from django.utils.html import format_html
 
 
-class InlineButtonInline(GenericTabularInline):
-    model = InlineButton
+class CustomReplyInlineButtonInline(GenericTabularInline):
+    model = CustomReplyInlineButton
     extra = 1  # Установите количество дополнительных форм
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
@@ -25,13 +26,13 @@ class CallbackInlineReplyAdmin(admin.ModelAdmin):
     # field order
     fields = ('callback_data', 'text')
 
-    inlines = [InlineButtonInline]
+    inlines = [CustomReplyInlineButtonInline]
 
 
 @admin.register(models.Notification)
 class NotificationAdmin(admin.ModelAdmin):
     list_display = ('alert_date', 'is_sent')
-    inlines = [InlineButtonInline]
+    inlines = [CustomReplyInlineButtonInline]
 
 
 @admin.register(models.CommandReply)
@@ -48,7 +49,7 @@ class CommandReplyAdmin(admin.ModelAdmin):
     # Порядок полей
     fields = ('command', 'text')
 
-    inlines = [InlineButtonInline]
+    inlines = [CustomReplyInlineButtonInline]
 
  
 @admin.register(models.Translation) 
