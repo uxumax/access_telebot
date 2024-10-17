@@ -18,8 +18,8 @@ from django.contrib import admin
 from access_telebot.settings import SECRET_URL_WAY
 from django.urls import include, path
 
-
 urlpatterns = [
     path(f"{SECRET_URL_WAY}/admin/", admin.site.urls),
-    path(f"{SECRET_URL_WAY}/main/", include('main.urls'))
+    path(f"{SECRET_URL_WAY}/main/", include('main.urls')),
+    path(f"{SECRET_URL_WAY}/messenger/", include('messenger.urls')),
 ]

@@ -10,6 +10,22 @@ class PeriodicNotifierWorkerStat(main.models.WorkerStatAbstract):
     """Worker stat model"""
 
 
+MESSAGE_CREATOR_CHOICES = (
+    ("1", "Customer"),
+    ("2", "Bot"),
+)
+
+
+class Message(models.Model):
+    creator = models.CharField(
+        max_length=255,
+        choices=MESSAGE_CREATOR_CHOICES
+    )
+    chat_id = models.BigIntegerField(null=True, blank=True)  
+    text = models.TextField(max_length=2048)
+    date = models.DateTimeField(default=timezone.now)
+
+
 class CustomReplyBase(models.Model):
     text = models.TextField()
 

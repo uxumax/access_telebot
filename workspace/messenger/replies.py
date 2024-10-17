@@ -180,6 +180,11 @@ class ReplyBuilder:
             parse_mode="HTML",
             *args, **kwargs
         )
+        models.Message.objects.create(
+            creator="2",
+            chat_id=self.customer.chat_id,
+            text=message_display
+        )
 
 
 class CallbackInlineReplyBuilder(ReplyBuilder):

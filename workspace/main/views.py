@@ -20,6 +20,17 @@ log = get_logger(__name__)
 bot = telebot.TeleBot(TELEBOT_KEY, threaded=False)
 
 
+def _save_income_message(
+    chat_id: int,
+    text: str
+):
+    messenger.models.Message.objects.create(
+        creator="1",
+        chat_id=chat_id,
+        text=text
+    )
+
+
 def _save_or_update_user(
     user: telebot.types.User,
     come_type: typing.Literal[
@@ -146,12 +157,14 @@ class InlineCallbackFirstHandler:
 def callback_inline_handler(callback: telebot.types.CallbackQuery) -> None:
     InlineCallbackFirstHandler(callback)
     customer = _save_or_update_user(callback.from_user, "CALLBACK")
+    _save_income_message(callback.from_user.id, callback.data)
     messenger.routers.route_callback_inline(customer, callback)
 
 
 @bot.message_handler(func=lambda message: _is_message_command(message))
 def command_handler(message: telebot.types.Message):
     customer = _save_or_update_user(message.from_user, "COMMAND")
+    _save_income_message(message.chat.id, message.text)
     # messenger.routers.CommandRouter(customer, message).route()
     messenger.routers.route_command(customer, message)
 
@@ -160,9 +173,10 @@ def command_handler(message: telebot.types.Message):
 @bot.message_handler(func=lambda message: True)
 def handle_all_messages(message: telebot.types.Message) -> None:
     _save_or_update_user(message.from_user, "CUSTOMER_MESSAGE")
-    bot.reply_to(
-        message, f"Your message is {message.text} but I don't know what to do with this"
-    )
+    _save_income_message(message.chat.id, message.text)
+    # bot.reply_to(
+    #     message, f"Your message is {message.text} but I don't know what to do with this"
+    # )
 
 
 class TelegramWebhookShield:

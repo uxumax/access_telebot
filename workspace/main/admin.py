@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django.utils.html import format_html
+from django.urls import reverse
 import main.models
 import accesser.admin
 import cashier.models
@@ -57,4 +59,18 @@ class CustomerAdmin(admin.ModelAdmin):
         BuildingInvoiceInline,
     ]
 
+    list_display = (
+        'chat_id',
+        'username',
+        'first_name',
+        'last_name',
+        'dialog_window_link',  # Add the custom button here
+    )
+
+    def dialog_window_link(self, obj):
+        url = reverse('messenger:dialog_window_view', args=[obj.chat_id])
+        return format_html('<a class="button" href="{}">Open Dialog</a>', url)
+
+    dialog_window_link.short_description = 'Dialog Window'
+    dialog_window_link.allow_tags = True
 
