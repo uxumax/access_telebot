@@ -71,7 +71,7 @@ class Worker(core.Worker):
                 return None
             raise
         except ConnectionError:
-            sleep(self.beat_interval)
+            sleep(cls.beat_interval)
             return cls._get_tg_chat()
 
 
