@@ -24,6 +24,17 @@ echo "Install pip dependencies"
 pip install --no-cache-dir -r ./requirements.txt 
 
 echo "Migrate db"
+is_migrations_exists() {
+    migrations_dir=$1/migrations
+    if [ ! -d "$migrations_dir" ] || [ -z "$(ls -A $migrations_dir)" ]; then
+        return 1
+    fi
+}
+python manage.py makemigrations
+is_migrations_exists main || python manage.py makemigrations main
+is_migrations_exists messenger || python manage.py makemigrations messenger
+is_migrations_exists cashier || python manage.py makemigrations cashier
+is_migrations_exists accesser || python manage.py makemigrations accesser
 python manage.py migrate
 
 echo "Make staticfiles"
