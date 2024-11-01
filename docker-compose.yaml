@@ -1,0 +1,72 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+    entrypoint:
+      - bash # run with bash instead set x permissions 
+      - /home/user/docker/web/entrypoint.sh
+    volumes:
+      - ./docker:/home/user/docker
+      - ./workspace:/home/user/workspace
+      - ./docker/pyenv:/home/user/pyenv
+    restart: always
+    ports:
+      - "8000:8000"
+    healthcheck:
+      # Check is local web port 8000 is open
+      test: "bash -c 'printf \"GET / HTTP/1.1\n\n\" > /dev/tcp/127.0.0.1/8000; exit $?;'"
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    depends_on:
+      postgres:
+        # Wait postgres ready condition
+        condition: service_healthy
+
+  workers:
+    build:
+      context: . 
+      dockerfile: docker/workers/Dockerfile
+    entrypoint:
+      - bash # run with sh instead set x permissions 
+      - /home/user/docker/workers/entrypoint.sh
+    restart: always
+    volumes:
+      - ./docker:/home/user/docker
+      - ./workspace:/home/user/workspace
+      - ./docker/pyenv:/home/user/pyenv
+    depends_on:
+      web:
+        # Wait web sever start
+        condition: service_healthy
+
+  postgres:
+    image: postgres:13
+    volumes:
+      - ./docker/postgres/data/:/var/lib/postgresql/data/
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: access_telebot
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: gotosu10
+    healthcheck:
+      # Postgres ready checker condition
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5    
+      start_period: 60s
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - type: bind # bind just one nginx.conf file
+        source: ./docker/nginx/nginx.conf
+        target: /etc/nginx/nginx.conf
+      - ./workspace:/workspace
+    depends_on:
+      - web
