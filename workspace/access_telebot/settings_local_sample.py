@@ -1,5 +1,6 @@
 import logging
 import base64
+from datetime import timedelta
 
 DATABASES = {
     'default': {

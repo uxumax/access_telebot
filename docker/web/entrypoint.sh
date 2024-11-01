@@ -1,11 +1,6 @@
 #!/bin/bash
 set -e
 
-# TODO move it to .env file
-export DJANGO_SUPERUSER_USERNAME=123
-export DJANGO_SUPERUSER_PASSWORD=123
-export DJANGO_SUPERUSER_EMAIL=some@email.com
-
 PYTHON_ENV_PATH="/home/user/pyenv"
 
 # Set permissions to env shared dir

@@ -24,6 +24,8 @@ services:
       postgres:
         # Wait postgres ready condition
         condition: service_healthy
+    env_file:
+      - ./.env
 
   workers:
     build:
@@ -41,6 +43,8 @@ services:
       web:
         # Wait web sever start
         condition: service_healthy
+    env_file:
+      - ./.env
 
   postgres:
     image: postgres:13
