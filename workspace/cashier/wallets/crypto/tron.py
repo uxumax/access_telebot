@@ -1,3 +1,4 @@
+import os
 from tronpy import Tron, Contract
 from tronpy.keys import PrivateKey
 from tronpy.providers import HTTPProvider
@@ -7,7 +8,7 @@ from decimal import Decimal
 
 from cashier import models
 
-TRONGRID_API_KEY = "85809ba2-ae5c-4f57-ae5d-6095e79395c7"
+TRONGRID_API_KEY = os.getenv("TRONGRID_API_KEY")
 DEFAULT_FEE_LIMIT = 28_000_000
 USDT_CONTRACT = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"
 
