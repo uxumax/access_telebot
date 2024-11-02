@@ -43,6 +43,4 @@ fixtures/
 *.swo
 
 ### Access telebot ###
-logs/
-settings_local.py
 media/
