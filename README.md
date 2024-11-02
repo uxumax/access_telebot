@@ -46,7 +46,7 @@ You have to set your Telegram bot as an administrator of the chat access that yo
 
 ### Field encryption key
 
-This key is important. Change it, save and put to safe place. Without this key you can loose you funds that you get with merchant selling accesses
+FIELD_ENCRYPTION_KEY in .env is very important. Change it before build and run, save and put to safe place. Without this key you can loose you funds that you get with merchant selling accesses
 
 ## Note
 
