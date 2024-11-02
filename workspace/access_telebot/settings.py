@@ -1,4 +1,3 @@
-
 """
 Django settings for access_telebot project.
 
@@ -10,39 +9,108 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
-from access_telebot.settings_local import (
-    DATABASES, 
-    ALLOWED_HOSTS_REGEX, 
-    DEBUG,
-    TELEBOT_KEY,
-    TELEBOT_WEBHOOK,
-    SECRET_URL_WAY,
-    FIELD_ENCRYPTION_KEY,
-    LOG_LEVEL,
-    TRANSLATION,
-    PORT,
-    TESTER_CHAT_ID,
-    STATIC_ROOT,
-    CSRF_TRUSTED_ORIGINS,
-    LOGGING,
-    NOTIFIER_SUBSCRIBTION_EXPIRRING_DAYS_BEFORE,
-    WAIT_AFTER_SUBSCRIBTION_EXPIRED_DAYS,
-    DEFAULT_ACCESS_REVOKING_METHOD,
-)
-
 from pathlib import Path
+import os
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv("POSTGRES_DB"),
+        'USER': os.getenv("POSTGRES_USER"),
+        'PASSWORD': os.getenv("POSTGRES_PASSWORD"),
+        'HOST': os.getenv("POSTGRES_HOST"),
+    },
+}
+
+DEBUG = os.getenv("DJANGO_DEBUG", "true") == 'true'
+
+TELEBOT_KEY = os.getenv("TELEBOT_KEY")
+SECRET_URL_WAY = os.getenv("SECRET_URL_WAY", "secret").lower()
+FIELD_ENCRYPTION_KEY = os.getenv("FIELD_ENCRYPTION_KEY")
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+
+TRANSLATION = os.getenv("TRANSLATION")
+TESTER_CHAT_ID = os.getenv("TESTER_CHAT_ID")
+
+TELEBOT_WEBHOOK = {
+    "type": "SERVEO",  # SERVEO is nice for run on local machine
+    # "type": "HOST",  # HOST is nice for run on vps like
+    # "host": "https://domain.com", # Can be IPv4 also
+}
+
+# Warn about expiration days before subscription end
+NOTIFIER_SUBSCRIBTION_EXPIRRING_DAYS_BEFORE = timedelta(
+    days=int(
+        os.getenv("NOTIFIER_SUBSCRIBTION_EXPIRRING_DAYS_BEFORE", 2)
+    )
+)
+
+# Wait some days after subscription expired is default
+# Numbers of day for waitig after subscription expired 
+# setting in `WAIT_AFTER_SUBSCRIBTION_EXPIRED_DAYS`.
+# Set "FORCE" if need to revoke access exactly after `end_date`
+DEFAULT_ACCESS_REVOKING_METHOD=os.getenv(
+    "DEFAULT_ACCESS_REVOKING_METHOD", "GENTLE"
+)
+
+# Revoke access after number of days after `access.end_date`
+WAIT_AFTER_SUBSCRIBTION_EXPIRED_DAYS = timedelta(
+    days=int(
+        os.getenv("WAIT_AFTER_SUBSCRIBTION_EXPIRED_DAYS", 6)
+    )
+)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '%(asctime)s %(levelname)s [%(name)s:%(lineno)s] %(module)s %(process)d %(thread)d %(message)s'
+        }
+    },
+    'handlers': {
+        'main': {
+            'level': LOG_LEVEL,
+            'class': 'logging.handlers.RotatingFileHandler',
+            'formatter': 'verbose',
+            'filename': f'{BASE_DIR}/logs/all.log',
+            'maxBytes': 1024 * 1024 * 100,  # 100 mb
+        }
+    },
+    'loggers': {
+        'console': {
+            'level': LOG_LEVEL,
+            'handlers': ['main'],
+            'propagate': True,
+        },
+        'root': {
+            'level': LOG_LEVEL,
+            'handlers': ['main'],
+            'propagate': True,
+        },
+    }
+}
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
-
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-o!3(6%09sbs-zx(wa^sb9y=pynlhtpslp=v@dn)%%b@&-zpt02"
+# Temporary solution for generating django keys just use another key
+# TODO change this temp shit to normal .env generator
+SECRET_KEY = os.getenv("TELEBOT_KEY")  
 
-ALLOWED_HOSTS = ["*"]  # replaced to settings_local.ALLOWED_HOSTS_REGEX
+CSRF_TRUSTED_ORIGINS = [
+    'https://serveo.net',  # For webhooks made with backtunnel to Serveo
+]
+ALLOWED_HOSTS = ["*"]  
+ALLOWED_HOSTS_REGEX = [
+    r"0\.0\.0\.0",
+    r"127\.0\.0\.1",
+    r'^[a-f0-9]{32}\.serveo\.net$',  # For webhooks made with backtunnel to Serveo
+]
 # Application definition
 
 INSTALLED_APPS = [
@@ -124,6 +192,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

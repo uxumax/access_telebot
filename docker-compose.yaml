@@ -19,7 +19,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 60s
+      start_period: 30s
     depends_on:
       postgres:
         # Wait postgres ready condition
@@ -51,10 +51,6 @@ services:
     volumes:
       - ./docker/postgres/data/:/var/lib/postgresql/data/
     restart: unless-stopped
-    environment:
-      POSTGRES_DB: access_telebot
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: gotosu10
     healthcheck:
       # Postgres ready checker condition
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -62,6 +58,8 @@ services:
       timeout: 5s
       retries: 5    
       start_period: 60s
+    env_file:
+      - ./.env
 
   nginx:
     image: nginx:alpine
@@ -74,3 +72,5 @@ services:
       - ./workspace:/workspace
     depends_on:
       - web
+    env_file:
+      - ./.env
