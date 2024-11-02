@@ -38,15 +38,19 @@ Ensure you have Docker Engine installed. If not, follow the installation guide [
 
 ### Admin Panel
 
-The bot's Django admin panel should be available at `localhost:80/secret_way/admin`. You can change `secret_way` to any secret phrase in the `.env` file.
+The bot's Django admin panel should be available at `localhost:80/secret_way/admin`. You can change `secret_way` to any secret phrase in the `.env` file. Also you can find default Django admin login and password there
 
 ### Telegram Bot Setup
 
-You have to set your Telegram bot as an administrator of the chat access that you are going to sell. After adding it as an administrator, the channel/chat will appear in the admin panel as a Chat model.
+Do not create Chat models manually. At first you have to set your Telegram bot as an administrator of the chat access that you are going to sell. After adding it as an administrator, the channel/chat will appear in the admin panel as a `Chat` model. After this you can create `Subsciption` models with preferred periods and prices
 
 ### Field encryption key
 
-FIELD_ENCRYPTION_KEY in .env is very important. Change it before build and run, save and put to safe place. Without this key you can loose you funds that you get with merchant selling accesses
+The `FIELD_ENCRYPTION_KEY` in the `.env` file is very important. Change it before building and running, save it, and store it in a safe place. Without this key, you could lose the funds you receive from merchant sales.
+
+### Tron Address Model
+
+This model contains addresses and private keys of TRON chain wallets. New wallet creates automatically when all others are busy.
 
 ## Note
 
