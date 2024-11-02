@@ -8,7 +8,10 @@ from threading import (
 )
 import signal
 
-from main.workers import webhook_tunneler
+from main.workers import (
+    webhook_tunneler,
+    infinity_poller,
+)
 from cashier.workers import (
     tron_transaction_checker,
     invoice_expire_checker,
@@ -35,7 +38,8 @@ class Command(BaseCommand):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.workers = [
-            webhook_tunneler.Worker(),
+            # webhook_tunneler.Worker(),
+            infinity_poller.Worker(),
             tron_transaction_checker.Worker(),
             invoice_expire_checker.Worker(),
             invoice_confirm_checker.Worker(),

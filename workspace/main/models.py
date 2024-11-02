@@ -105,3 +105,7 @@ class WorkerStatAbstract(SingletonModel):
 
 class WebhookTunnelerWorkerStat(WorkerStatAbstract):
     """Worker stat model"""
+
+
+class InfinityPollerWorkerStat(WorkerStatAbstract):
+    """Worker stat model"""
