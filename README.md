@@ -20,7 +20,7 @@ Ensure you have Docker Engine installed. If not, follow the installation guide [
 
 1. **Configure the .env file:**
 
-   Add `TELEBOT_KEY` and `TRONGRID_API_KEY` to the `.env` file before building and running the Docker containers. TronGrid key can get (here)[https://www.trongrid.io/register]
+   Add `TELEBOT_KEY` and `TRONGRID_API_KEY` to the `.env` file before building and running the Docker containers. TronGrid key can get [here](https://www.trongrid.io/register)
 
 2. **Build the Docker containers:**
 
