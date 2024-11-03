@@ -20,7 +20,8 @@ Ensure you have Docker Engine installed. If not, follow the installation guide [
 
 1. **Configure the .env file:**
 
-   Add `TELEBOT_KEY` and `TRONGRID_API_KEY` to the `.env` file before building and running the Docker containers. TronGrid key can get [here](https://www.trongrid.io/register)
+   - Add `TELEBOT_KEY` and `TRONGRID_API_KEY` to the `.env` file before building and running the Docker containers. TronGrid key can get [here](https://www.trongrid.io/register)
+   - The `FIELD_ENCRYPTION_KEY` file is very important. Change it, save it, and store it in a safe place. Without this key, you could lose the funds you receive from merchant sales.
 
 2. **Build the Docker containers:**
 
@@ -43,10 +44,6 @@ The bot's Django admin panel should be available at `localhost:80/secret_way/adm
 ### Telegram Bot Setup
 
 Do not create Chat models manually. At first you have to set your Telegram bot as an administrator of the chat access that you are going to sell. After adding it as an administrator, the channel/chat will appear in the admin panel as a `Chat` model. After this you can create `Subsciption` models with preferred periods and prices
-
-### Field encryption key
-
-The `FIELD_ENCRYPTION_KEY` in the `.env` file is very important. Change it before building and running, save it, and store it in a safe place. Without this key, you could lose the funds you receive from merchant sales.
 
 ### Tron Address Model
 
