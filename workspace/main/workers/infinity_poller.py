@@ -1,3 +1,4 @@
+import os
 from main import models
 from main.workers import core
 from access_telebot.logger import get_logger
@@ -21,5 +22,6 @@ class Worker(core.Worker):
         bot.delete_webhook()
         bot.infinity_polling(  # Should have infinity loop inside
             timeout=10,
-            long_polling_timeout=5
+            long_polling_timeout=5,
+            skip_pending=os.getenv("SKIP_OLD_BOT_UPDATES_ON_NEW_START", "false") == 'true'
         )
