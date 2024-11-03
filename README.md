@@ -52,6 +52,16 @@ The `FIELD_ENCRYPTION_KEY` in the `.env` file is very important. Change it befor
 
 This model contains addresses and private keys of TRON chain wallets. New wallet creates automatically when all others are busy.
 
+### Using Django Manage from the Host
+
+You can execute Django management commands (`python3 manage.py`) directly from the Docker host without needing to access the web container's shell. Simply use the script `docker/manage.sh <command>`. For example:
+
+```bash
+docker/manage.sh generate_field_encryption_key
+```
+
+Please ensure that all Docker Compose services are running. A list of all available commands can be found in `docs/commands.md`.
+
 ## Note
 
 This README is a work in progress. Additional details will be added later.

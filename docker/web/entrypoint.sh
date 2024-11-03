@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
 
-PYTHON_ENV_PATH="/home/user/pyenv"
-
 # Set permissions to env shared dir
 echo "Set user owner of python env dir"
 chown -R user:user $PYTHON_ENV_PATH
