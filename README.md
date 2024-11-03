@@ -70,7 +70,7 @@ To manage your USDT, you need to export your TRON wallets for use in a regular c
 docker/manage.sh export_tron_wallets
 ```
 
-After exporting, you can copy the private keys and import them into the TronGrid wallet for management. You can continue to use these wallets to receive payments even after importing them into the [TronLink Wallet](https://www.tronlink.org/) app.
+After exporting, you can copy the private keys and import them into the [TronLink Wallet](https://www.tronlink.org/) for management. You can continue to use these wallets to receive payments even after importing them into the that app.
 
 ## Note
 
