@@ -62,6 +62,16 @@ docker/manage.sh generate_field_encryption_key
 
 Please ensure that all Docker Compose services are running. A list of all available commands can be found in `docs/commands.md`.
 
+### Exporting Tron Wallets
+
+To manage your USDT, you need to export your TRON wallets for use in a regular crypto app. Use the following command to export all wallets with their private keys:
+
+```
+docker/manage.sh export_tron_wallets
+```
+
+After exporting, you can copy the private keys and import them into the TronGrid wallet for management. You can continue to use these wallets to receive payments even after importing them into the [TronLink Wallet](https://www.tronlink.org/) app.
+
 ## Note
 
 This README is a work in progress. Additional details will be added later.
