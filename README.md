@@ -77,8 +77,7 @@ Use can use Translations to change bot messages text. At first generate your fir
 docker/manage.sh make_translations easy
 ```
 
-Then you can find generated translations in the Django admin `messenger.Translation` model and change them filling `TO TEXT` of each original `FROM_TEXT`. Set your `TRANSLATION_NAME` in .env and restart whole project or just `web` service. 
-
+You can find the generated translations in the Django admin under the `messenger.Translation` model. Here, you can modify them by filling in the `TO_TEXT` for each original `FROM_TEXT`. Set your `TRANSLATION_NAME` in the .env file, and restart the entire project or just the `web` service when you're finished.
 
 ## Note
 
