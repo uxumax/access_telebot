@@ -41,9 +41,9 @@ Ensure you have Docker Engine installed. If not, follow the installation guide [
 
 The bot's Django admin panel should be available at `localhost:80/secret_way/admin`. You can change `secret_way` to any secret phrase in the `.env` file. Also you can find default Django admin login and password there
 
-### Telegram Bot Setup
+### Add Chats and Create Subsctiptions
 
-Do not create Chat instance manually. At first you have to set your Telegram bot as an administrator of the chat access that you are going to sell. After adding it as an administrator, the channel/chat will appear in the admin panel as a `Chat` instance. After this you can create `Subsciption` instances with preferred periods and prices
+Do not create Chat instances manually. At first you have to set your Telegram bot as an administrator of the chat access that you are going to sell. After adding it as an administrator, the channel/chat will appear in the admin panel as a `Chat` instance. After this you can create `Subsciption` instances with preferred periods and prices
 
 ### Tron Address Model
 
