@@ -20,7 +20,7 @@ Ensure you have Docker Engine installed. If not, follow the installation guide [
 
 1. **Configure the .env file:**
 
-   - Add `TELEBOT_KEY` and `TRONGRID_API_KEY` to the `.env` file before building and running the Docker containers. TronGrid key can get [here](https://www.trongrid.io/register)
+   - Set `TELEBOT_KEY` and `TRONGRID_API_KEY` in the `.env` file before building and running the Docker containers. TronGrid key can get [here](https://www.trongrid.io/register)
    - The `FIELD_ENCRYPTION_KEY` file is very important. Change it, save it, and store it in a safe place. Without this key, you could lose the funds you receive from merchant sales.
 
 2. **Build the Docker containers:**
