@@ -69,6 +69,16 @@ docker/manage.sh export_tron_wallets
 
 After exporting, you can copy the private keys and import them into the [TronLink Wallet](https://www.tronlink.org/) for management. You can continue to use these wallets to receive payments even after importing them into the that app.
 
+### Changing Text of Bot Messages 
+
+Use can use Translations to change bot messages text. At first generate your first translation with name `easy`
+
+```bash
+docker/manage.sh make_translations easy
+```
+
+Then you can find generated translations in the Django admin `messenger.Translation` model and change them filling `TO TEXT` of each original `FROM_TEXT`
+
 ## Note
 
 This README is a work in progress. Additional details will be added later.
