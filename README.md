@@ -43,11 +43,11 @@ The bot's Django admin panel should be available at `localhost:80/secret_way/adm
 
 ### Telegram Bot Setup
 
-Do not create Chat models manually. At first you have to set your Telegram bot as an administrator of the chat access that you are going to sell. After adding it as an administrator, the channel/chat will appear in the admin panel as a `Chat` model. After this you can create `Subsciption` models with preferred periods and prices
+Do not create Chat instance manually. At first you have to set your Telegram bot as an administrator of the chat access that you are going to sell. After adding it as an administrator, the channel/chat will appear in the admin panel as a `Chat` instance. After this you can create `Subsciption` instances with preferred periods and prices
 
 ### Tron Address Model
 
-This model contains addresses and private keys of TRON chain wallets. New wallet creates automatically when all others are busy.
+This table contains addresses and private keys of TRON chain wallets. New wallet creates automatically when all others are busy.
 
 ### Using Django Manage from the Host
 
@@ -77,7 +77,7 @@ Use can use Translations to change bot messages text. At first generate your fir
 docker/manage.sh make_translations easy
 ```
 
-You can find the generated translations in the Django admin under the `messenger.Translation` model. Here, you can modify them by filling in the `TO_TEXT` for each original `FROM_TEXT`. Set your `TRANSLATION_NAME` in the .env file, and restart the entire project or just the `web` service when you're finished.
+You can find the generated translations in the Django admin under the `messenger.Translation` instances. Here, you can modify them by filling in the `TO_TEXT` for each original `FROM_TEXT`. Set your `TRANSLATION_NAME` in the .env file, and restart the entire project or just the `web` service when you're finished.
 
 ## Note
 
