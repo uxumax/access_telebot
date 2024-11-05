@@ -169,14 +169,30 @@ def command_handler(message: telebot.types.Message):
     messenger.routers.route_command(customer, message)
 
 
+@bot.my_chat_member_handler(func=lambda callback: True)
+def handle_chat_member_update(update: telebot.types.ChatMemberUpdated) -> None:
+    if update.new_chat_member.status != "administrator":
+        # Skip non-admin member updates
+        return
+
+    chat = update.chat
+    log.info(
+        f"Add new chat {chat.id}:{chat.title}"
+    )
+    accesser.models.Chat.objects.update_or_create(
+        chat_id=chat.id,
+        defaults={
+            "title": chat.title or "",
+            "chat_type": chat.type,
+        }
+    )
+
+
 # General handler for all messages
 @bot.message_handler(func=lambda message: True)
 def handle_all_messages(message: telebot.types.Message) -> None:
     _save_or_update_user(message.from_user, "CUSTOMER_MESSAGE")
     _save_income_message(message.chat.id, message.text)
-    # bot.reply_to(
-    #     message, f"Your message is {message.text} but I don't know what to do with this"
-    # )
 
 
 class TelegramWebhookShield:
@@ -210,12 +226,6 @@ class TelegramWebhookView(View):
             )
             return JsonResponse({"status": 200})
 
-        # Обработка обновлений о статусе члена чата
-        try:
-            self._process_chat_member_update(update)
-        except Exception as e:
-            log.exception(e)
-
         bot.process_new_updates([update])
 
         return JsonResponse({"status": 200})
@@ -238,11 +248,6 @@ class TelegramWebhookView(View):
         return not (private_message or callback_query or chat_member_update)
 
     @staticmethod
-    def _is_chat_member_update(update):
-        return hasattr(update, "my_chat_member") \
-            and update.my_chat_member is not None
-
-    @staticmethod
     def _is_private_message(update) -> bool:
         is_message = hasattr(update, "message") and update.message
         if is_message:
@@ -253,23 +258,4 @@ class TelegramWebhookView(View):
     @staticmethod
     def _is_callback_query(update) -> bool:
         return hasattr(update, "callback_query") and update.callback_query
-
-    def _process_chat_member_update(self, update):
-        if not self._is_chat_member_update(update):
-            return
-
-        # Получаем данные обновления
-        new_status = update.my_chat_member.new_chat_member.status
-        if new_status in ["administrator", "creator"]:
-            # Сохраняем или обновляем информацию о чате
-            chat_info = update.my_chat_member.chat
-            chat_type = chat_info.type
-            # log.debug(f"CT: {chat_type}")
-            accesser.models.Chat.objects.update_or_create(
-                chat_id=chat_info.id,
-                defaults={
-                    "title": chat_info.title or "",
-                    "chat_type": chat_type,
-                }
-            )
 
