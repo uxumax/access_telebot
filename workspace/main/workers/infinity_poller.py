@@ -1,15 +1,10 @@
 import os
+from time import sleep
 from main import models
 from main.workers import core
 from access_telebot.logger import get_logger
 from main.views import bot
 
-
-from access_telebot.settings import (
-    TELEBOT_KEY,
-)
-
-# bot = telebot.TeleBot(TELEBOT_KEY)
 log = get_logger(__name__)
 
 
@@ -20,8 +15,17 @@ class Worker(core.Worker):
     def start(self):
         log.info("Start infinity polling")
         bot.delete_webhook()
-        bot.infinity_polling(  # Should have infinity loop inside
-            timeout=10,
-            long_polling_timeout=5,
-            skip_pending=os.getenv("SKIP_OLD_BOT_UPDATES_ON_NEW_START", "false") == 'true'
-        )
+        while True:
+            try:
+                bot.infinity_polling(
+                    timeout=10,
+                    long_polling_timeout=5,
+                    skip_pending=os.getenv("SKIP_OLD_BOT_UPDATES_ON_NEW_START", "false") == 'true'
+                )
+            except Exception as e:
+                wait_sec = 20
+                log.warning(
+                    f"Infinity polling crashed with {e}. "
+                    f"Start another one after {wait_sec} "
+                )
+                sleep(wait_sec)
