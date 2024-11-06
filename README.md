@@ -45,6 +45,8 @@ The bot's Django admin panel should be available at `localhost:80/secret_way/adm
 
 A Chat model represents your private channel or group that you intend to sell access to. Do not manually create Chat instances. First, set your Telegram bot as an administrator of your private channel or group. Once added as an administrator, the channel or group will appear in the admin panel as a `Chat` model instance. After this, you can manually create `Subscription` instances with your preferred periods and prices. Trial periods supported.
 
+<img src="./docs/images/create_subscription_instance.png?raw=true" width="600"/>
+
 ### Tron Address Model
 
 This table contains addresses and private keys of TRON chain wallets. New wallet creates automatically when all others are busy.
