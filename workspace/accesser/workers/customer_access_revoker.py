@@ -76,11 +76,15 @@ class Worker(core.Worker):
             active=True,
         ).filter(
             Q(
+                revoking_method="GENTLE",
+                end_date__lte=self.revoke_date,
+            ) | Q(
                 revoking_method="FORCE",
                 end_date__lte=timezone.now(),
             ) | Q(
-                revoking_method="GENTLE",
-                end_date__lte=self.revoke_date,
+                # Revoke trial accesses forcly too
+                is_trial=True, 
+                end_date__lte=timezone.now(),
             )
         ).all()
 

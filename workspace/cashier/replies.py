@@ -155,6 +155,20 @@ class ChooseAccessDurationReply(BuildingInvoiceReplyBuilder):
     def _build_markup(self):
         durations = self.invoice.subscription.durations.all()
         for duration in durations:
+            if duration.is_trial and not self.customer.is_trial_used:
+                self.add_button(
+                    _(
+                        "Trial access for {{duration}}", 
+                    ).context(
+                        duration=duration.format_duration(),
+                        price=duration.price,
+                    ),
+                    app_name="accesser",
+                    reply_name="GiveTrialInviteLinksReply",
+                    args=duration.id
+                )
+                continue
+
             self.add_button(
                 _(
                     "{{duration}} - {{price}} USDT", 

@@ -228,6 +228,80 @@ class InviteLinkSendReplyBuilder(CallbackInlineReplyBuilder):
                 )
                 text = Text("")  # Reset text for the next batch
 
+    def assign_subscription_access(
+        self,
+        subscription: models.Subscription,
+        duration: timedelta,
+        is_trial: bool = False
+    ) -> None:
+        start_date = timezone.now()
+        end_date = start_date + duration
+        access = models.CustomerChatAccess.objects.create(
+            customer=self.customer,
+            start_date=start_date,
+            end_date=end_date,
+            subscription=subscription,
+            active=True,
+            is_trial=is_trial
+        )
+        return access
+
+    def create_invite_links(
+        self,
+        access: models.CustomerChatAccess,
+    ) -> list:
+        links = []
+        # for chat in access.subscription.chats.all():
+        for chat in access.subscription.get_all_child_chats():
+            link = self._create_invite_link(
+                access, chat
+            ) 
+            links.append(
+                (chat.title, link)
+            )
+        return links
+
+    def _create_invite_link(
+        self, 
+        access: models.CustomerChatAccess,
+        chat: models.Chat, 
+    ) -> str: 
+        # expire_timestamp = int(access.end_date.timestamp())
+        link_name = self._get_invite_link_name(chat.chat_id)
+        try:    
+            invite_link = bot.create_chat_invite_link(
+                name=link_name,
+                chat_id=chat.chat_id,  
+                # expire_date=expire_timestamp,  # Expiration date as a Unix timestamp
+                member_limit=1,
+                creates_join_request=False  # This will require administrators to approve join requests
+            )
+        except Exception as e:
+            log.exception(e)
+            raise Exception(
+                "Cannot make invite link for {self.customer} "
+                f"to chat {chat.chat_id}:\n {e}"
+            )
+        
+        invite_link_str = invite_link.invite_link
+
+        models.InviteLink.objects.create(
+            name=link_name,
+            url=invite_link_str,
+            customer=self.customer,
+            chat=chat,
+            access=access,
+            expire_date=access.end_date
+        )
+
+        return invite_link_str
+
+    def _get_invite_link_name(self, chat_id: int):
+        time = timezone.now().timestamp()  # for uniqilize link name
+        return (
+            f"{self.customer.chat_id}:{chat_id}:{time}"
+        )
+
 
 class InvoiceFinderReplyBuilder(CallbackInlineReplyBuilder):
     USING_ARGS = (
@@ -325,6 +399,67 @@ class SubscriptionRechargedReply(InvoiceFinderReplyBuilder):
         access.save()
 
 
+class GiveTrialInviteLinksReply(InviteLinkSendReplyBuilder):
+    USING_ARGS = (
+        "duration_id"
+    )
+
+    def build(self):
+        duration = self._get_duration()
+        if not duration.is_trial or self.customer.is_trial_used:
+            self.send_message(_(
+                "There is no trial duration or "
+                "customer used his trial period already"
+            ))
+            return self.router.redirect(
+                app_name="main",
+                reply_name="StartCommandReply",
+                reply_type="COMMAND"
+            )
+        
+        customer_chat_access = self.assign_subscription_access(
+            duration.subscription, 
+            duration.duration,
+            is_trial=True
+        )
+        
+        invite_links = self.create_invite_links(
+            customer_chat_access
+        )
+        self.send_message(
+            "Here is your trial invite links"
+        )
+        self.send_invite_links(invite_links)
+
+        # Set customer trial used after send him invites successfull
+        self.customer.is_trial_used = True
+        self.customer.save()
+
+        # Calc and send valid until date
+        valid_until_date = (
+            timezone.now() + duration.duration
+        ).strftime("%d-%m-%Y %H:%M")
+        self.send_message(
+            _(
+                "Trial period valid until {{date}}"
+            ).context(
+                date=valid_until_date
+            )
+        )
+
+        return self.router.redirect(
+            "MySubscriptionsReply"
+        )
+
+    def _get_duration(self):
+        return models.SubscriptionDurationPrice.objects.get(
+            pk=self._get_duration_id()
+        )
+
+    def _get_duration_id(self):
+        return int(self.callback.args[0])
+
+
 class GiveInviteLinksReply(
     InviteLinkSendReplyBuilder,
     InvoiceFinderReplyBuilder
@@ -336,12 +471,12 @@ class GiveInviteLinksReply(
 
     def build(self):
         invoice = self.get_invoice()
-        customer_chat_access = self._assign_subscription_access(
+        customer_chat_access = self.assign_subscription_access(
             invoice.subscription, 
             invoice.duration.duration,        
         )
         
-        invite_links = self._get_invite_links(customer_chat_access)
+        invite_links = self.create_invite_links(customer_chat_access)
         self.send_message(
             "Here is your invite links"
         )
@@ -364,94 +499,6 @@ class GiveInviteLinksReply(
         return self.router.redirect(
             "MySubscriptionsReply"
         )
-
-    def _assign_subscription_access(
-        self,
-        subscription: models.Subscription,
-        duration: timedelta,
-    ) -> None:
-        start_date = timezone.now()
-        end_date = start_date + duration
-        access = models.CustomerChatAccess.objects.create(
-            customer=self.customer,
-            start_date=start_date,
-            end_date=end_date,
-            subscription=subscription,
-            active=True,
-        )
-        return access
-
-    def _get_invite_links(
-        self,
-        access: models.CustomerChatAccess,
-    ) -> list:
-        links = []
-        # for chat in access.subscription.chats.all():
-        for chat in access.subscription.get_all_child_chats():
-            link = self._create_invite_link(
-                access, chat
-            ) 
-            links.append(
-                (chat.title, link)
-            )
-        return links
-
-    def _create_invite_link(
-        self, 
-        access: models.CustomerChatAccess,
-        chat: models.Chat, 
-    ) -> str: 
-        # expire_timestamp = int(access.end_date.timestamp())
-        link_name = self._get_invite_link_name(chat.chat_id)
-        try:    
-            invite_link = bot.create_chat_invite_link(
-                name=link_name,
-                chat_id=chat.chat_id,  
-                # expire_date=expire_timestamp,  # Expiration date as a Unix timestamp
-                member_limit=1,
-                creates_join_request=False  # This will require administrators to approve join requests
-            )
-        except Exception as e:
-            log.exception(e)
-            raise Exception(
-                "Cannot make invite link for {self.customer} "
-                f"to chat {chat.chat_id}:\n {e}"
-            )
-        
-        invite_link_str = invite_link.invite_link
-
-        models.InviteLink.objects.create(
-            name=link_name,
-            url=invite_link_str,
-            customer=self.customer,
-            chat=chat,
-            access=access,
-            expire_date=access.end_date
-        )
-
-        return invite_link_str
-
-    def _get_invite_link_name(self, chat_id: int):
-        time = timezone.now().timestamp()  # for uniqilize link name
-        return (
-            f"{self.customer.chat_id}:{chat_id}:{time}"
-        )
-
-    # def _get_invite_links_str(
-    #     self, 
-    #     links: typing.List[
-    #         typing.Tuple[str, str]
-    #     ]
-    # ) -> str:
-    #     text = Text("")
-    #     for chat_title, link in links:
-    #         text += _(
-    #             "-- {{chat_title}} - {{link}}\n"
-    #         ).context(
-    #             chat_title=chat_title,
-    #             link=link
-    #         )
-    #     return text.load()
 
 
 class RemindInviteLinksReply(InviteLinkSendReplyBuilder):

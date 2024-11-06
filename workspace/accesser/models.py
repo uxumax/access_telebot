@@ -97,8 +97,24 @@ class SubscriptionDurationPrice(models.Model):
         on_delete=models.CASCADE,
         related_name="durations"
     )
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    duration = models.DurationField(default=timedelta(days=30))    
+    price = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2,
+        verbose_name="Price in USDT",
+        help_text=(
+            "Specify subscription duration price in USDT"
+        )
+    )
+    duration = models.DurationField(
+        default=timedelta(days=30),
+        verbose_name="Duration (Days Hours:Minutes:Seconds)",
+        help_text=(
+            "Specify the duration in 'days hours:minutes:seconds'. "
+            "For example, '30 5:00:00' represents "
+            "30 days and 5 hours."
+        )
+    )    
+    is_trial = models.BooleanField(default=False) 
 
     def __str__(self):
         return f"{self.subscription.name} | {self.duration} | {self.price}"
@@ -163,6 +179,7 @@ class CustomerChatAccess(models.Model):
         blank=True
     )
     active = models.BooleanField(default=True)
+    is_trial = models.BooleanField(default=False)
 
     def __str__(self):
         return f"({self.id}:{self.customer.id}:{self.end_date})"

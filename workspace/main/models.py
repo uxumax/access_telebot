@@ -57,12 +57,13 @@ class CustomerBase(models.Model):  # System base class
     last_callback_inline_date = models.DateTimeField(
         default=timezone.make_aware(timezone.datetime(1970, 1, 1))
     )  # Время последнего callback-вызова
-
     last_notification_date = models.DateTimeField(
         null=True,
         blank=True
     )
-
+    is_trial_used = models.BooleanField(
+        default=False
+    )
 
 class Customer(CustomerBase):
     base = models.OneToOneField(
@@ -71,21 +72,20 @@ class Customer(CustomerBase):
         parent_link=True, 
         related_name="notification"
     )
-    # Основные данные, связанные с Chat телебота
-    chat_id = models.BigIntegerField(unique=True)  # ID чата в Telegram
+    chat_id = models.BigIntegerField(unique=True) 
     username = models.CharField(
         max_length=100, blank=True, null=True
-    )  # Имя пользователя Telegram
-    is_bot = models.BooleanField(default=False)  # Является ли пользователь ботом
+    )
+    is_bot = models.BooleanField(default=False)  
     first_name = models.CharField(
         max_length=255, blank=True, null=True
-    )  # Имя пользователя
+    )
     last_name = models.CharField(
         max_length=255, blank=True, null=True
-    )  # Фамилия пользователя
+    )
     language_code = models.CharField(
         max_length=10, blank=True, null=True
-    )  # Код языка пользователя
+    )
     phone = models.CharField(
         max_length=30, blank=True, null=True
     )

@@ -30,7 +30,7 @@ class CustomerAdmin(admin.ModelAdmin):
                 "fields": (
                     "chat_id",
                     "username",
-                    "is_bot",
+                    "is_trial_used",
                     "first_name",
                     "last_name",
                     "language_code",

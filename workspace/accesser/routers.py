@@ -19,6 +19,9 @@ class CallbackInlineRouter(CallbackInlineRouterBase):
         if _is("MySubscriptionsReply"):
             return self.build_reply(replies.MySubscriptionsReply)
 
+        if _is("GiveTrialInviteLinksReply"):
+            return self.build_reply(replies.GiveTrialInviteLinksReply)
+
         if _is("GiveInviteLinksReply"):
             return self.build_reply(replies.GiveInviteLinksReply)
 

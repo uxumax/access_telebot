@@ -27,7 +27,7 @@ class SubscriptionDurationPriceInline(admin.TabularInline):
     model = models.SubscriptionDurationPrice
 
     # field order
-    fields = ('duration', 'price')
+    fields = ('duration', 'price', 'is_trial')
 
     extra = 1  # Количество пустых форм для новых записей
 
