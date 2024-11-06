@@ -155,7 +155,9 @@ class ChooseAccessDurationReply(BuildingInvoiceReplyBuilder):
     def _build_markup(self):
         durations = self.invoice.subscription.durations.all()
         for duration in durations:
-            if duration.is_trial and not self.customer.is_trial_used:
+            if duration.is_trial:
+                if self.customer.is_trial_used:
+                    continue
                 self.add_button(
                     _(
                         "Trial access for {{duration}}", 
