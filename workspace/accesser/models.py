@@ -34,41 +34,38 @@ class Chat(models.Model):
         choices=ChatTypeChoices.choices,
         default=ChatTypeChoices.CHANNEL
     )
-    # invite_link = models.URLField(
-    #     max_length=1024, 
-    #     blank=True, 
-    #     null=True
-    # )
 
     def __str__(self):
         return f"{self.title} ({self.chat_type})"
 
-    def clean(self):
-        super().clean()
-        if self.invite_link:
-            validator = URLValidator()
-            try:
-                validator(self.invite_link)
-            except ValidationError as e:
-                raise ValidationError({'invite_link': "Invalid URL."}) from e
-
 
 class Subscription(models.Model):
-    name = models.CharField(max_length=100)
+    name = models.CharField(
+        max_length=100,
+        help_text="The name of the subscription. Customers will see this when selecting."
+    )
     chats = models.ManyToManyField(
         'Chat', 
         related_name='subscriptions',
-        blank=True
+        blank=True,
+        help_text="A group of Telegram private channels/chats available for sale."
     )
     parent = models.ForeignKey(
         'self', 
         on_delete=models.CASCADE, 
         related_name='childs',
         null=True, 
-        blank=True
+        blank=True,
+        help_text="Assign a parent subscription to create a subscription hierarchy for customer selection."
     )
-    is_top = models.BooleanField(default=False)
-    is_whole_only = models.BooleanField(default=False)
+    is_top = models.BooleanField(
+        default=False,
+        help_text="Set to True to display this subscription in the initial bot message after pressing the 'Plans' button."
+    )
+    is_whole_only = models.BooleanField(
+        default=False,
+        help_text="Set to True to sell this chat group as a whole, rather than individual chats."
+    )
 
     def __str__(self):
         return f"({self.name})"
