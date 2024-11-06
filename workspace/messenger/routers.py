@@ -152,8 +152,14 @@ class CallbackInlineRouterBase:
         self.customer = customer
         self.callback = callback
 
-    def is_reply_name(self, name: str) -> bool:
-        return self.callback.reply_name == name
+    def route(self):
+        reply_class = getattr(
+            self.replies, self.callback.reply_name, None
+        )
+        if reply_class is None:
+            return self.reply_not_found()
+
+        return self.build_reply(reply_class)
 
     def build_reply(
         self, 
@@ -271,8 +277,14 @@ class CommandRouterBase:
         if message is not None:
             self.command = self._parse_command(message)
 
-    def is_reply_name(self, name: str) -> bool:
-        return self.reply_name == name
+    def route(self):
+        reply_class = getattr(
+            self.replies, self.callback.reply_name, None
+        )
+        if reply_class is None:
+            return self.reply_not_found()
+
+        return self.build_reply(reply_class)
 
     def build_reply(
         self, 

@@ -6,17 +6,9 @@ from messenger.routers import (
 
 
 class CommandRouter(CommandRouterBase):
-    def route(self):
-        _is = self.is_reply_name
-
-        if _is("StartCommandReply"):
-            return self.build_reply(replies.StartCommandReply)
+    replies = replies
 
 
 class CallbackInlineRouter(CallbackInlineRouterBase):
-    def route(self):
-        _is = self.is_reply_name   
-
-        if _is("StartReply"):
-            return self.build_reply(replies.StartReply)
+    replies = replies
 
