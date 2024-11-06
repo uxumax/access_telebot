@@ -35,7 +35,7 @@ Ensure you have Docker Engine installed. If not, follow the installation guide [
    docker compose up
    ```
 
-   Wait approximately 30 seconds for all services to initialize. Once ready, you can start interacting with the bot for testing purposes.
+   Wait approximately 30 seconds for all services to initialize. Once ready, you can start interacting with the bot for testing purposes. Note that Nginx port `80` and Postgres port `5432` should be free on your docker host machine.
 
 ### Admin Panel
 
