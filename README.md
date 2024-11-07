@@ -39,7 +39,7 @@ Ensure you have Docker Engine installed. If not, follow the installation guide [
 
 ### Admin Panel
 
-The bot's Django admin panel should be available at `localhost:80/secret_way/admin`. You can change `secret_way` to any secret phrase in the `.env` file. Also you can find default Django admin login and password there
+The bot's Django admin panel should be available at `localhost:8082/secret_way/admin`. You can change `secret_way` to any secret phrase in the `.env` file. Also you can find default Django admin login and password there
 
 ### Add Chats and Create Subscriptions
 
