@@ -1,6 +1,6 @@
+import os
 import logging
 from django.core.management.base import BaseCommand
-# from django.utils import timezone
 from threading import (
     Thread, 
     # Timer, 
@@ -38,8 +38,6 @@ class Command(BaseCommand):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.workers = [
-            # webhook_tunneler.Worker(),
-            infinity_poller.Worker(),
             tron_transaction_checker.Worker(),
             invoice_expire_checker.Worker(),
             invoice_confirm_checker.Worker(),
@@ -47,6 +45,14 @@ class Command(BaseCommand):
             chat_updater.Worker(),
             periodic_notifier.Worker(),
         ]
+
+        # Set Telegam API connection worker type 
+        is_using_webhook = os.getenv("USE_TELEGRAM_API_WEBHOOK") == "true"
+        if is_using_webhook:
+            self.workers.append(webhook_tunneler.Worker())
+        else:
+            self.workers.append(infinity_poller.Worker())
+
         self.threads = []
 
     def handle(self, *args, **options):
