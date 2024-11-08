@@ -18,10 +18,17 @@ Ensure you have Docker Engine installed. If not, follow the installation guide [
 
 ### Installation
 
-1. **Configure the .env file:**
+1. **Generate the .env file:**
 
-   - Set `TELEBOT_KEY` and `TRONGRID_API_KEY` in the `.env` file before building and running the Docker containers. TronGrid key can get [here](https://www.trongrid.io/register)
-   - The `FIELD_ENCRYPTION_KEY` file is very important. Change it, save it, and store it in a safe place. Without this key, you could lose the funds you receive from merchant sales.
+   Run `create_dotenv.sh` to generate a `.env` file.  
+   The script will prompt you for `TELEBOT_KEY` and `TRONGRID_KEY`.  
+   You can skip the interactive input setting empty and manually set them in the created `.env` file.
+
+   ```
+   ./create_dotenv.sh  
+   ```
+
+   The generated `FIELD_ENCRYPTION_KEY` in `.env` file is very important. Copy it and store it in a safe place. Without this key, you could lose the funds you receive from merchant sales.
 
 2. **Build the Docker containers:**
 
