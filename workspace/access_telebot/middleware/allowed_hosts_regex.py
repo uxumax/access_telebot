@@ -15,7 +15,7 @@ class AllowedHostsRegexMiddleware:
 
         # Проверяем соответствие хоста каждому паттерну
         if not any(re.compile(pattern).match(host) for pattern in self.patterns):
-            return HttpResponseForbidden("Access Denied")
+            return HttpResponseForbidden(f"Access denied for host {host}")
 
         response = self.get_response(request)
         return response

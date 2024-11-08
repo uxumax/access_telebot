@@ -102,13 +102,16 @@ LOGGING = {
 # TODO change this temp shit to normal .env generator
 SECRET_KEY = os.getenv("TELEBOT_KEY")  
 
+DOMAIN_NAME = os.getenv("DOMAIN_NAME", "localhost")
 CSRF_TRUSTED_ORIGINS = [
+    f"https://{DOMAIN_NAME}",
     'https://serveo.net',  # For webhooks made with backtunnel to Serveo
 ]
 ALLOWED_HOSTS = ["*"]  
 ALLOWED_HOSTS_REGEX = [
     r"0\.0\.0\.0",
     r"127\.0\.0\.1",
+    f"{DOMAIN_NAME}",
     r'^[a-f0-9]{32}\.serveo\.net$',  # For webhooks made with backtunnel to Serveo
 ]
 # Application definition
