@@ -19,28 +19,19 @@ export/
 var/
 staticfiles/
 
-# Translations
-*.mo
-*.pot
-
-# Sphinx documentation
-docs/_build/
-
-# PyBuilder
-target/
-
-
-### Django ###
+# Django 
 *.log
-*.pot
-*.pyc
 migrations/
 !migrations/__init__.py
 fixtures/
 
-### VIM ###
+# VIM 
 *.swp
 *.swo
 
-### Access telebot ###
+# Access telebot 
 media/
+
+# Environ variables
+.env
+
