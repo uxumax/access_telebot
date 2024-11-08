@@ -20,7 +20,8 @@ Ensure you have Docker Engine installed. If not, follow the installation guide [
 
 1. **Generate the .env file:**
 
-   Ensure you have both the [Telegram Bot API key](https://t.me/botfather) and the [Tron Grid API key](https://www.trongrid.io/)
+   Ensure you have both the [Telegram Bot API key](https://t.me/botfather) and the [Tron Grid API key](https://www.trongrid.io/).
+   
    Run `create_dotenv.sh` to generate a `.env` file.
    
    ```
