@@ -95,3 +95,7 @@ PYTHON_ENV_PATH=/home/user/pyenv
 "
 
 echo -e "$env_vars" > .env
+echo "The .env file gas been generated."
+echo
+echo "WARNING! Copy generated FIELD_ENCRYPTION_KEY from this file"
+echo "Store it in a safe place. Without this key, you could lose the funds you receive from merchant sales."
