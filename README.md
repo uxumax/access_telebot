@@ -28,10 +28,8 @@ Ensure you have Docker Engine installed. If not, follow the installation guide [
    ./create_dotenv.sh  
    ```
    
-   The script will prompt you for `TELEBOT_KEY` and `TRONGRID_KEY`.  Tron Grid API key you can get [here]() for free
+   The script will prompt you for `TELEBOT_KEY` and `TRONGRID_KEY`. 
    You can skip the interactive input setting empty and manually set them in the created `.env` file.
-
-
 
    The generated `FIELD_ENCRYPTION_KEY` in `.env` file is very important. Copy it and store it in a safe place. Without this key, you could lose the funds you receive from merchant sales.
 
