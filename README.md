@@ -47,6 +47,14 @@ Ensure you have Docker Engine installed. If not, follow the installation guide [
 
    Wait approximately 30 seconds for all services to initialize. Once ready, you can start interacting with the bot for testing purposes. Note that Nginx port `8082` and Postgres port `5445` should be free on your docker host machine otherwise feel free change them to any in `.env`.
 
+### Easy Setup AccessBot on System Startup
+
+To start all Docker services start automatically when your system startup, simply run the following script:
+
+```sh
+./docker/start_on_os_startup.sh
+```
+
 ### Admin Panel
 
 The bot's Django admin panel should be available at `localhost:8082/secret_way/admin`. You can change `secret_way` to any secret phrase in the `.env` file. Also you can find default Django admin login and password there
