@@ -241,9 +241,6 @@ class TelegramWebhookView(View):
         private_message = self._is_private_message(update)
         # Обновление не пропускается, если это запрос обратного вызова
         callback_query = self._is_callback_query(update)
-        # Обновление не пропускается, если это изменение статуса члена чата
-        chat_member_update = self._is_chat_member_update(update)
-        # log.info(f"chat_member_update bool: {chat_member_update}") 
         # Если обновление не относится ни к одному из вышеуказанных типов, оно пропускается
         return not (private_message or callback_query or chat_member_update)
 
