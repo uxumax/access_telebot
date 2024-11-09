@@ -26,7 +26,7 @@ DATABASES = {
     },
 }
 
-DEBUG = os.getenv("DJANGO_DEBUG", "true") == 'true'
+DEBUG = os.getenv("DJANGO_DEBUG", "false") == 'true'
 
 TELEBOT_KEY = os.getenv("TELEBOT_KEY")
 SECRET_URL_WAY = os.getenv("SECRET_URL_WAY", "secret").lower()
