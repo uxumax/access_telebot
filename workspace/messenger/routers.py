@@ -279,7 +279,7 @@ class CommandRouterBase:
 
     def route(self):
         reply_class = getattr(
-            self.replies, self.callback.reply_name, None
+            self.replies, self.reply_name, None
         )
         if reply_class is None:
             return self.reply_not_found()
