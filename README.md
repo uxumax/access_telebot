@@ -20,23 +20,26 @@ Ensure you have Docker Engine installed. If not, follow the installation guide [
 
 1. **Generate the .env file:**
 
-   Run `create_dotenv.sh` to generate a `.env` file.  
-   The script will prompt you for `TELEBOT_KEY` and `TRONGRID_KEY`.  
-   You can skip the interactive input setting empty and manually set them in the created `.env` file.
-
+   Ensure you have both the [Telegram Bot API key](https://t.me/botfather) and the [Tron Grid API key](https://www.trongrid.io/).
+   
+   Run `create_dotenv.sh` to generate a `.env` file.
+   
    ```
    ./create_dotenv.sh  
    ```
+   
+   The script will prompt you for `TELEBOT_KEY` and `TRONGRID_KEY`. 
+   You can skip the interactive input setting empty and manually set them in the created `.env` file.
 
    The generated `FIELD_ENCRYPTION_KEY` in `.env` file is very important. Copy it and store it in a safe place. Without this key, you could lose the funds you receive from merchant sales.
 
-2. **Build the Docker containers:**
+3. **Build the Docker containers:**
 
    ```sh
    docker compose build
    ```
 
-3. **Run the containers and start the bot:**
+4. **Run the containers and start the bot:**
 
    ```sh
    docker compose up
