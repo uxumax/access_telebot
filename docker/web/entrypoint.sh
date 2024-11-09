@@ -50,4 +50,7 @@ else
 fi
 
 echo "Run web server"
-gunicorn access_telebot.wsgi:application --bind 0.0.0.0:8000
+gunicorn access_telebot.wsgi:application \
+    --bind 0.0.0.0:8000 \
+    --access-logfile ./logs/gunicorn.log \
+	--error-logfile ./logs/gunicorn.log 
