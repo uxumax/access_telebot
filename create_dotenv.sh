@@ -84,6 +84,9 @@ SKIP_OLD_BOT_UPDATES_ON_NEW_START=false
 # Django debug mode
 DJANGO_DEBUG=false
 
+# Django secret key
+DJANGO_SECRET_KEY=$(generate_key 32)
+
 # Log level
 LOG_LEVEL=INFO
 

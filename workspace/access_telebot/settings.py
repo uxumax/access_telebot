@@ -98,9 +98,7 @@ LOGGING = {
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 # SECURITY WARNING: keep the secret key used in production secret!
-# Temporary solution for generating django keys just use another key
-# TODO change this temp shit to normal .env generator
-SECRET_KEY = os.getenv("TELEBOT_KEY")  
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")  
 
 DOMAIN_NAME = os.getenv("DOMAIN_NAME", "localhost")
 CSRF_TRUSTED_ORIGINS = [
