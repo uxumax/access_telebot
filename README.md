@@ -18,34 +18,28 @@ Ensure you have Docker Engine installed. If not, follow the installation guide [
 
 ### Installation
 
-1. **Generate the .env file:**
+#### 1. Generate the .env file
 
-   Ensure you have both the [Telegram Bot API key](https://t.me/botfather) and the [Tron Grid API key](https://www.trongrid.io/).
-   
-   Run `create_dotenv.sh` to generate a `.env` file.
-   
-   ```
-   ./create_dotenv.sh  
-   ```
-   
-   The script will prompt you for `TELEBOT_KEY` and `TRONGRID_KEY`. 
-   You can skip the interactive input setting empty and manually set them in the created `.env` file.
+Ensure you have both the [Telegram Bot API key](https://t.me/botfather) and the [Tron Grid API key](https://www.trongrid.io/).
 
-   The generated `FIELD_ENCRYPTION_KEY` in `.env` file is very important. Copy it and store it in a safe place. Without this key, you could lose the funds you receive from merchant sales.
+Run `create_dotenv.sh` to generate a `.env` file.
 
-3. **Build the Docker containers:**
+```
+./create_dotenv.sh
+```
 
-   ```sh
-   docker compose build
-   ```
+The script will prompt you for `TELEBOT_KEY` and `TRONGRID_KEY`.
+You can skip the interactive input setting empty and manually set them in the created `.env` file.
 
-4. **Run the containers and start the bot:**
+The generated `FIELD_ENCRYPTION_KEY` in `.env` file is very important. Copy it and store it in a safe place. Without this key, you could lose the funds you receive from merchant sales.
 
-   ```sh
-   docker compose up
-   ```
+#### 2. Build and run the Docker services:**
 
-   Wait approximately 30 seconds for all services to initialize. Once ready, you can start interacting with the bot for testing purposes. Note that Nginx port `8082` and Postgres port `5445` should be free on your docker host machine otherwise feel free change them to any in `.env`.
+```sh
+docker compose up --build
+```
+
+Wait approximately 30 seconds for all services to initialize. Once ready, you can start interacting with the bot for testing purposes. Note that Nginx port `8082` and Postgres port `5445` should be free on your docker host machine otherwise feel free change them to any in `.env`.
 
 ### Easy Setup AccessBot on System Startup
 
